@@ -12,26 +12,21 @@ export default function SplitSlider({ sarImagePath, opticalPath, onClose }: Spli
   const containerRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState(50);
   const [dragging, setDragging] = useState(false);
-  const [allWeather, setAllWeather] = useState(true);
   const [sarLoaded, setSarLoaded] = useState(false);
   const [optLoaded, setOptLoaded] = useState(false);
 
-  const handleMove = useCallback(
-    (clientX: number) => {
-      if (!containerRef.current) return;
-      const rect = containerRef.current.getBoundingClientRect();
-      const x = clientX - rect.left;
-      const pct = Math.max(0, Math.min(100, (x / rect.width) * 100));
-      setPosition(pct);
-    },
-    []
-  );
+  const handleMove = useCallback((clientX: number) => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const pct = Math.max(0, Math.min(100, (x / rect.width) * 100));
+    setPosition(pct);
+  }, []);
 
   const handlePointerDown = useCallback(() => setDragging(true), []);
 
   useEffect(() => {
     if (!dragging) return;
-
     const onMove = (e: PointerEvent) => handleMove(e.clientX);
     const onUp = () => setDragging(false);
 
@@ -43,36 +38,27 @@ export default function SplitSlider({ sarImagePath, opticalPath, onClose }: Spli
     };
   }, [dragging, handleMove]);
 
-  const leftLabel = allWeather ? 'SAR (All-Weather)' : 'Date 1';
-  const rightLabel = allWeather ? 'Optical (Cloudy)' : 'Date 2';
-
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center">
-      <div className="relative w-[90vw] max-w-4xl aspect-square bg-[#111827] rounded-xl overflow-hidden border border-[#374151] shadow-2xl">
-        {/* Close button */}
-        <button
-          onClick={onClose}
-          className="absolute top-3 right-3 z-10 w-8 h-8 bg-[#111827]/90 rounded-full flex items-center justify-center text-[#9ca3af] hover:text-[#f9fafb] border border-[#374151] transition-colors"
-        >
-          ✕
-        </button>
+    <div className="fixed inset-0 z-50 bg-[#090A0F]/85 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="relative w-[92vw] max-w-4xl aspect-[4/3] bg-[#090A0F] border border-[#222736] rounded-lg overflow-hidden shadow-2xl flex flex-col">
+        {/* Header Bar */}
+        <div className="px-4 py-2.5 bg-[#12151E] border-b border-[#222736] flex items-center justify-between z-20">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-xs text-[#F1F5F9]">All-Weather Penetration Comparison</span>
+            <span className="text-[10px] text-[#8A94A6]">· Drag slider to compare SAR radar penetration vs cloudy optical</span>
+          </div>
 
-        {/* All-Weather toggle */}
-        <div className="absolute top-3 left-3 z-10">
           <button
-            onClick={() => setAllWeather((p) => !p)}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors border ${
-              allWeather
-                ? 'bg-[#f59e0b]/20 text-[#f59e0b] border-[#f59e0b]/30'
-                : 'bg-[#1f2937] text-[#9ca3af] border-[#374151]'
-            }`}
+            onClick={onClose}
+            className="text-xs font-mono text-[#8A94A6] hover:text-[#F1F5F9] px-2 py-0.5 rounded border border-[#222736] hover:bg-[#090A0F] transition-colors"
           >
-            🛰️ All-Weather Mode {allWeather ? 'ON' : 'OFF'}
+            Esc / Close
           </button>
         </div>
 
-        <div ref={containerRef} className="relative w-full h-full select-none">
-          {/* Left image (SAR) */}
+        {/* Comparison Viewport */}
+        <div ref={containerRef} className="relative w-full flex-1 select-none overflow-hidden bg-[#090A0F]">
+          {/* Left image: SAR */}
           <div
             className="absolute inset-0 overflow-hidden"
             style={{ clipPath: `inset(0 ${100 - position}% 0 0)` }}
@@ -80,53 +66,51 @@ export default function SplitSlider({ sarImagePath, opticalPath, onClose }: Spli
             {sarImagePath ? (
               <img
                 src={sarImagePath}
-                alt="SAR"
+                alt="Active SAR Backscatter"
                 className="w-full h-full object-cover"
                 onLoad={() => setSarLoaded(true)}
-                onError={() => setSarLoaded(false)}
               />
             ) : null}
             {!sarLoaded && (
-              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#06b6d4]/20 to-[#d946ef]/20">
-                <p className="text-[#9ca3af] text-sm">SAR data loading...</p>
+              <div className="w-full h-full flex items-center justify-center bg-[#12151E]">
+                <p className="text-[#8A94A6] text-xs font-mono">Loading calibrated SAR raster...</p>
               </div>
             )}
-            <div className="absolute bottom-4 left-4 bg-[#111827]/80 px-3 py-1 rounded text-xs text-[#06b6d4] font-medium">
-              {leftLabel}
+            <div className="absolute bottom-3 left-3 bg-[#090A0F]/90 border border-[#222736] px-2.5 py-1 rounded text-xs text-[#F59E0B] font-mono font-medium">
+              SAR Backscatter (Penetrates Clouds)
             </div>
           </div>
 
-          {/* Right image (Optical) */}
+          {/* Right image: Optical Cloudy */}
           <div
             className="absolute inset-0 overflow-hidden"
             style={{ clipPath: `inset(0 0 0 ${position}%)` }}
           >
             <img
               src={opticalPath}
-              alt="Optical"
+              alt="Cloud-Obscured Optical Satellite"
               className="w-full h-full object-cover"
               onLoad={() => setOptLoaded(true)}
-              onError={() => setOptLoaded(false)}
             />
             {!optLoaded && (
-              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#374151]/50 to-[#1f2937]/50">
-                <p className="text-[#9ca3af] text-sm">Optical data loading...</p>
+              <div className="w-full h-full flex items-center justify-center bg-[#12151E]">
+                <p className="text-[#8A94A6] text-xs font-mono">Loading optical imagery...</p>
               </div>
             )}
-            <div className="absolute bottom-4 right-4 bg-[#111827]/80 px-3 py-1 rounded text-xs text-[#d946ef] font-medium">
-              {rightLabel}
+            <div className="absolute bottom-3 right-3 bg-[#090A0F]/90 border border-[#222736] px-2.5 py-1 rounded text-xs text-[#8A94A6] font-mono font-medium">
+              True-Color Optical (Cloud Obscured)
             </div>
           </div>
 
-          {/* Divider handle */}
+          {/* Divider Handle */}
           <div
             className="split-handle absolute top-0 bottom-0 z-10"
             style={{ left: `${position}%`, transform: 'translateX(-50%)' }}
             onPointerDown={handlePointerDown}
           >
-            <div className="w-0.5 h-full bg-[#f59e0b]" />
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-[#f59e0b] rounded-full flex items-center justify-center shadow-lg shadow-[#f59e0b]/30">
-              <svg className="w-5 h-5 text-[#0a0e1a]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+            <div className="w-0.5 h-full bg-[#F59E0B]" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-7 h-7 bg-[#090A0F] border border-[#F59E0B] rounded-full flex items-center justify-center shadow-lg cursor-ew-resize">
+              <svg className="w-3.5 h-3.5 text-[#F59E0B]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
               </svg>
             </div>

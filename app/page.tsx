@@ -1,100 +1,153 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useStudyAreas } from '@/hooks/useStudyAreas';
-import type { StudyArea } from '@/types';
+import type { StudyArea, BasemapStyle } from '@/types';
 
 const GlobeWrapper = dynamic(() => import('@/components/Globe/GlobeWrapper'), { ssr: false });
 const Header = dynamic(() => import('@/components/Header/Header'), { ssr: false });
+const InspectorSidebar = dynamic(() => import('@/components/InspectorSidebar/InspectorSidebar'), { ssr: false });
+const BottomDock = dynamic(() => import('@/components/BottomDock/BottomDock'), { ssr: false });
+const CursorHUD = dynamic(() => import('@/components/CursorHUD/CursorHUD'), { ssr: false });
 const SplitSlider = dynamic(() => import('@/components/SplitSlider/SplitSlider'), { ssr: false });
-const PolarizationToggle = dynamic(() => import('@/components/PolarizationToggle/PolarizationToggle'), { ssr: false });
-const TimelinePanel = dynamic(() => import('@/components/TimelinePanel/TimelinePanel'), { ssr: false });
-const ColorbarLegend = dynamic(() => import('@/components/ColorbarLegend/ColorbarLegend'), { ssr: false });
 const PhysicsExplainer = dynamic(() => import('@/components/PhysicsExplainer/PhysicsExplainer'), { ssr: false });
-const SonificationEngine = dynamic(() => import('@/components/SonificationEngine/SonificationEngine'), { ssr: false });
-const AncillaryLayers = dynamic(() => import('@/components/AncillaryLayers/AncillaryLayers'), { ssr: false });
-const WaltzTour = dynamic(() => import('@/components/WaltzTour/WaltzTour'), { ssr: false });
-const TelemetryOverlay = dynamic(() => import('@/components/TelemetryOverlay/TelemetryOverlay'), { ssr: false });
-const StudyAreaCard = dynamic(() => import('@/components/StudyAreaCard/StudyAreaCard'), { ssr: false });
 const MissionResourcesModal = dynamic(() => import('@/components/MissionResourcesModal/MissionResourcesModal'), { ssr: false });
 
 export default function HomePage() {
   const { areas, activeArea, setActiveArea, loading } = useStudyAreas();
   const [activeLayerKey, setActiveLayerKey] = useState<string>('hh');
-  const [showExplainer, setShowExplainer] = useState(false);
-  const [showSlider, setShowSlider] = useState(false);
-  const [showResources, setShowResources] = useState(false);
-  const [ancillaryVisible, setAncillaryVisible] = useState<string[]>([]);
-  const [cursorCoords, setCursorCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [basemap, setBasemap] = useState<BasemapStyle>('esri-satellite');
   const [sarOpacity, setSarOpacity] = useState<number>(0.85);
-  const [flyTo, setFlyTo] = useState<{ lat: number; lng: number; zoom: number; bearing: number; pitch: number } | null>(null);
+  const [cursorCoords, setCursorCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [ancillaryVisible, setAncillaryVisible] = useState<string[]>([]);
 
-  const handleAreaChange = useCallback((area: StudyArea) => {
-    setActiveArea(area);
-    // Auto-select signature layer per study area (Kerala -> HH, Amazon -> HV, Turkey -> InSAR, etc.)
-    const signatureLayer = area.default_layer && area.layers[area.default_layer]
-      ? area.default_layer
-      : Object.keys(area.layers)[0] || 'hh';
-    setActiveLayerKey(signatureLayer);
-    setFlyTo({ lat: area.lat, lng: area.lng, zoom: area.zoom, bearing: area.bearing, pitch: area.pitch });
-  }, [setActiveArea]);
+  // Modals & Tour States
+  const [showSlider, setShowSlider] = useState(false);
+  const [showExplainer, setShowExplainer] = useState(false);
+  const [showResources, setShowResources] = useState(false);
+  const [isTourPlaying, setIsTourPlaying] = useState(false);
+  const [tourIndex, setTourIndex] = useState(0);
+
+  // 1-Click Study Area Switcher: Auto-selects phenomenon signature layer
+  const handleAreaChange = useCallback(
+    (area: StudyArea) => {
+      setActiveArea(area);
+      const signatureLayer =
+        area.default_layer && area.layers[area.default_layer]
+          ? area.default_layer
+          : Object.keys(area.layers)[0] || 'hh';
+      setActiveLayerKey(signatureLayer);
+    },
+    [setActiveArea]
+  );
+
+  // Guided Tour 8-second interval runner
+  useEffect(() => {
+    if (!isTourPlaying || areas.length === 0) return;
+
+    const interval = setInterval(() => {
+      setTourIndex((prev) => {
+        const next = (prev + 1) % areas.length;
+        handleAreaChange(areas[next]);
+        return next;
+      });
+    }, 8000);
+
+    return () => clearInterval(interval);
+  }, [isTourPlaying, areas, handleAreaChange]);
+
+  const handleToggleTour = useCallback(() => {
+    setIsTourPlaying((prev) => {
+      const next = !prev;
+      if (next && areas.length > 0) {
+        setTourIndex(0);
+        handleAreaChange(areas[0]);
+      }
+      return next;
+    });
+  }, [areas, handleAreaChange]);
 
   const activeLayer = activeArea.layers[activeLayerKey] || Object.values(activeArea.layers)[0];
 
   if (loading) {
     return (
-      <div className="h-screen w-screen flex items-center justify-center bg-[#0a0e1a]">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-[#f59e0b] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-[#f59e0b] font-[family-name:var(--font-space-grotesk)] text-xl">Loading EarthWaltz...</p>
+      <div className="h-screen w-screen flex items-center justify-center bg-[#090A0F]">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-[#222736] border-t-[#F59E0B] rounded-full animate-spin" />
+          <p className="font-mono text-xs text-[#8A94A6]">Initializing EarthWaltz Observatory...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="globe-container">
+    <div className="h-screen w-screen flex flex-col bg-[#090A0F] text-[#F1F5F9] overflow-hidden select-none">
+      {/* ZONE 1: TOP COMMAND BAR */}
       <Header
         areas={areas}
         activeArea={activeArea}
         onAreaChange={handleAreaChange}
-        onToggleExplainer={() => setShowExplainer((p) => !p)}
         onToggleSlider={() => setShowSlider((p) => !p)}
+        showSlider={showSlider}
+        onToggleExplainer={() => setShowExplainer((p) => !p)}
+        showExplainer={showExplainer}
         onToggleResources={() => setShowResources((p) => !p)}
-      />
-
-      <GlobeWrapper
-        areas={areas}
-        activeArea={activeArea}
-        activeLayer={activeLayer}
-        flyTo={flyTo}
-        onAreaClick={handleAreaChange}
-        ancillaryVisible={ancillaryVisible}
-        onCursorMove={setCursorCoords}
+        showResources={showResources}
+        isTourPlaying={isTourPlaying}
+        onToggleTour={handleToggleTour}
+        tourIndex={tourIndex}
+        tourTotal={areas.length}
+        basemap={basemap}
+        onBasemapChange={setBasemap}
         opacity={sarOpacity}
         onOpacityChange={setSarOpacity}
       />
 
-      <StudyAreaCard area={activeArea} />
+      {/* WORKSPACE: DOCKED LEFT INSPECTOR + MAP CANVAS */}
+      <div className="relative flex-1 flex w-full h-[calc(100vh-3.5rem)] overflow-hidden">
+        {/* ZONE 2: LEFT DOCKED INSPECTOR SIDEBAR */}
+        <InspectorSidebar
+          area={activeArea}
+          activeLayerKey={activeLayerKey}
+          onSelectLayer={setActiveLayerKey}
+          ancillaryVisible={ancillaryVisible}
+          onToggleAncillary={(layerId) =>
+            setAncillaryVisible((prev) =>
+              prev.includes(layerId) ? prev.filter((l) => l !== layerId) : [...prev, layerId]
+            )
+          }
+        />
 
-      <PolarizationToggle
-        area={activeArea}
-        activeKey={activeLayerKey}
-        onSelect={setActiveLayerKey}
-      />
+        {/* MAP CANVAS VIEWPORT */}
+        <div className="relative flex-1 h-full overflow-hidden">
+          <GlobeWrapper
+            areas={areas}
+            activeArea={activeArea}
+            activeLayer={activeLayer}
+            onAreaClick={handleAreaChange}
+            ancillaryVisible={ancillaryVisible}
+            onCursorMove={setCursorCoords}
+            basemap={basemap}
+            opacity={sarOpacity}
+          />
 
-      {/* Scientific Colorbar Legend docked right above Timeline */}
-      <ColorbarLegend activeLayer={activeLayer} />
+          {/* ZONE 4: COMPACT CURSOR HUD (Top-Right of Map) */}
+          <CursorHUD
+            activeLayer={activeLayer}
+            area={activeArea}
+            cursorCoords={cursorCoords}
+          />
 
-      <TimelinePanel timeseriesPath={activeArea.timeseries} />
+          {/* ZONE 3: BOTTOM HUD DOCK (Colorbar Legend + Timeline Scrubber) */}
+          <BottomDock
+            activeLayer={activeLayer}
+            timeseriesPath={activeArea.timeseries}
+          />
+        </div>
+      </div>
 
-      <TelemetryOverlay
-        activeLayer={activeLayer}
-        area={activeArea}
-        cursorCoords={cursorCoords}
-      />
-
+      {/* OVERLAY MODALS */}
       {showSlider && (
         <SplitSlider
           sarImagePath={activeLayer ? `/data/${activeLayer.image}` : null}
@@ -116,24 +169,6 @@ export default function HomePage() {
           onClose={() => setShowResources(false)}
         />
       )}
-
-      <div className="absolute bottom-24 right-4 flex flex-col gap-2 z-20">
-        <SonificationEngine timeseriesPath={activeArea.timeseries} />
-        <WaltzTour
-          areas={areas}
-          onFlyTo={(area) => {
-            handleAreaChange(area);
-          }}
-        />
-        <AncillaryLayers
-          visible={ancillaryVisible}
-          onToggle={(layer) =>
-            setAncillaryVisible((prev) =>
-              prev.includes(layer) ? prev.filter((l) => l !== layer) : [...prev, layer]
-            )
-          }
-        />
-      </div>
     </div>
   );
 }

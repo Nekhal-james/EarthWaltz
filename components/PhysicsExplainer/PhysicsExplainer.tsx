@@ -7,157 +7,95 @@ interface PhysicsExplainerProps {
   onClose: () => void;
 }
 
-const SAR_PHYSICS: Record<string, { title: string; content: string; icon: string }[]> = {
-  default: [
-    {
-      title: 'What is Radar Backscatter?',
-      icon: '📡',
-      content:
-        'SAR sends microwave pulses and measures the energy bounced back. Rough surfaces (cities, forests) scatter strongly; smooth surfaces (water, roads) reflect energy away, appearing dark. The backscatter coefficient σ⁰ is measured in decibels (dB).',
-    },
-    {
-      title: 'HH vs HV Polarization',
-      icon: '↔️',
-      content:
-        'HH (Horizontal-Horizontal): transmit and receive horizontally. Best for soil moisture and flooding — water acts as a mirror, creating double-bounce with vegetation. HV (Horizontal-Vertical): the signal changes polarization on scattering. Strong HV means volume scattering in forest canopies.',
-    },
-    {
-      title: 'InSAR Interferometry',
-      icon: '🌈',
-      content:
-        'By comparing the phase of two SAR acquisitions, InSAR measures ground displacement to centimeter accuracy. Each color fringe in an interferogram represents ~12cm of displacement for L-band. Used to map earthquake deformation, volcanic uplift, and land subsidence.',
-    },
-    {
-      title: 'Coherence',
-      icon: '🎯',
-      content:
-        'Coherence measures how similar two SAR images are at each pixel (0 = random, 1 = identical). Low coherence means the surface changed between acquisitions — floods, harvests, or construction. High coherence means stability: buildings, rock, dry ground.',
-    },
-    {
-      title: 'Scattering Mechanisms',
-      icon: '🔬',
-      content:
-        'Surface scattering: bare soil, rock. Volume scattering: forest canopy, crops. Double-bounce: standing water beneath vegetation (corner reflector effect). Each polarization responds differently to these mechanisms, revealing different aspects of the landscape.',
-    },
-    {
-      title: 'Why L-band?',
-      icon: '📏',
-      content:
-        "NISAR's L-band (24cm wavelength) penetrates vegetation canopies, detecting soil moisture beneath crops and forests. Shorter wavelengths (C-band 5.6cm, S-band 9.3cm) interact more with leaves and branches, providing complementary information about canopy structure.",
-    },
-  ],
-};
-
-const AREA_PHYSICS: Record<string, { title: string; content: string; icon: string }[]> = {
-  kerala: [
-    {
-      title: 'Paddy Field Flooding',
-      icon: '🌾',
-      content:
-        'In Kuttanad, paddy fields are deliberately flooded. HH backscatter shows a distinctive bright signature from double-bounce: radar bounces off water surface, hits vertical rice stems, and returns. This bright flooding signal is invisible to optical sensors under clouds.',
-    },
-    {
-      title: 'Western Ghats Landslides',
-      icon: '⛰️',
-      content:
-        'InSAR coherence drops sharply where landslides have occurred, as the surface is completely rearranged. InSAR phase fringes can reveal pre-failure creep — slow ground movement that precedes catastrophic failure.',
-    },
-  ],
-  amazon: [
-    {
-      title: 'Canopy Penetration',
-      icon: '🌳',
-      content:
-        "L-band's 24cm wavelength penetrates the Amazon canopy, reaching the forest floor. HH detects flooding beneath the canopy (bright double-bounce), while HV responds to canopy volume. Deforestation appears as a sudden drop in HV backscatter.",
-    },
-  ],
-  himalayas: [
-    {
-      title: 'Glacier Motion',
-      icon: '🏔️',
-      content:
-        'Offset tracking measures glacier flow by correlating SAR amplitude patterns between acquisitions. Unlike InSAR (which loses coherence on fast-moving ice), offset tracking works for velocities up to meters per day.',
-    },
-  ],
-  turkey: [
-    {
-      title: 'Earthquake Interferograms',
-      icon: '🌍',
-      content:
-        'The rainbow fringes in earthquake interferograms map ground displacement. For NISAR L-band, each complete color cycle = ~12cm of line-of-sight displacement. Dense fringes near fault ruptures indicate rapid displacement gradients.',
-    },
-  ],
-  punjab: [
-    {
-      title: 'Dual-Frequency Agriculture',
-      icon: '🌱',
-      content:
-        'L-band penetrates wheat and rice canopies to sense soil moisture beneath. S-band (9.3cm) interacts with the canopy itself. Together they distinguish irrigated vs rainfed fields and track crop growth stages through the season.',
-    },
-  ],
-  indonesia: [
-    {
-      title: 'Seeing Through Smoke',
-      icon: '🔥',
-      content:
-        'During peat fire season, smoke blankets Sumatra for months. Optical satellites are useless. SAR cuts through smoke and clouds to map burn scars. C-band sees the surface roughness changes; L-band penetrates to detect subsurface peat moisture loss.',
-    },
-  ],
-};
+const GENERAL_PHYSICS = [
+  {
+    title: 'Radar Backscatter and Reflectivity',
+    content:
+      'Synthetic Aperture Radar transmits coherent microwave pulses and measures the backscattered energy. Rough, structured surfaces (urban buildings, forest biomass) scatter energy back toward the sensor, appearing bright. Smooth surfaces (calm water, asphalt) reflect energy away specularly, appearing dark. Calibrated backscatter is measured in decibels (dB).',
+  },
+  {
+    title: 'HH and HV Polarization Signatures',
+    content:
+      'HH (Horizontal Transmit, Horizontal Receive) is sensitive to direct surface roughness and double-bounce reflection (e.g., standing water under flooded vegetation). HV (Cross-Polarization) measures signal depolarization caused by multiple random scattering events inside tree canopies and complex agricultural structures.',
+  },
+  {
+    title: 'InSAR Interferometry and Phase Fringes',
+    content:
+      'By computing the phase difference between two repeat-pass SAR acquisitions, InSAR measures subtle surface displacement with centimeter-level precision. For NISAR L-band (wavelength 24 cm), one full phase cycle (2π radians) corresponds to exactly 12.0 cm of line-of-sight surface displacement.',
+  },
+  {
+    title: 'Interferometric Coherence',
+    content:
+      'Coherence (γ, scaled 0 to 1) quantifies the statistical phase correlation between two observations. High coherence (bare rock, urban structures) indicates surface stability. Low coherence (decorrelation) indicates structural change, moisture shifts, active flooding, or rapid vegetation growth.',
+  },
+  {
+    title: 'Scattering Mechanisms',
+    content:
+      'Three fundamental physical scattering mechanisms dominate radar imagery: Specular Reflection (flat water, runways), Volume Scattering (depolarizing forest canopies), and Double-Bounce Reflection (orthogonal corner reflector formed by vertical tree trunks or buildings standing in water).',
+  },
+  {
+    title: 'Multi-Frequency Penetration Depths',
+    content:
+      'L-Band (24 cm wavelength) penetrates dense tree foliage and dry soil layers to probe root zone hydrology and bedrock deformation. S-Band (9.3 cm) interacts with crop stalks and upper foliage. C-Band (5.6 cm) scatters off the top canopy crown, enabling complementary multi-frequency environmental profiling.',
+  },
+];
 
 export default function PhysicsExplainer({ area, onClose }: PhysicsExplainerProps) {
-  const generalTopics = SAR_PHYSICS.default;
-  const areaTopics = AREA_PHYSICS[area.id] || [];
-
   return (
-    <div className="slide-in-right fixed top-0 right-0 bottom-0 w-96 max-w-[90vw] z-40 bg-[#111827]/95 backdrop-blur-md border-l border-[#1f2937] shadow-2xl overflow-y-auto">
-      {/* Header */}
-      <div className="sticky top-0 bg-[#111827]/95 backdrop-blur-md border-b border-[#1f2937] px-5 py-4 flex items-center justify-between">
-        <div>
-          <h2 className="font-[family-name:var(--font-space-grotesk)] text-base font-bold text-[#f9fafb]">
-            SAR Physics
-          </h2>
-          <p className="text-xs text-[#9ca3af]">Understanding radar remote sensing</p>
+    <div className="fixed inset-0 z-50 bg-[#090A0F]/80 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="relative w-full max-w-2xl max-h-[85vh] bg-[#090A0F] border border-[#222736] rounded-lg shadow-2xl flex flex-col overflow-hidden">
+        {/* Modal Header */}
+        <div className="px-5 py-4 border-b border-[#222736] flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-semibold text-[#F1F5F9]">SAR Remote Sensing Physics Guide</h3>
+            <p className="text-xs text-[#8A94A6] mt-0.5">
+              Microwave scattering, polarimetry, and interferometry principles
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-xs font-mono text-[#8A94A6] hover:text-[#F1F5F9] px-2 py-1 rounded border border-[#222736] hover:bg-[#12151E] transition-colors"
+          >
+            Esc / Close
+          </button>
         </div>
-        <button
-          onClick={onClose}
-          className="w-8 h-8 rounded-full bg-[#1f2937] hover:bg-[#374151] flex items-center justify-center text-[#9ca3af] hover:text-[#f9fafb] transition-colors"
-        >
-          ✕
-        </button>
-      </div>
 
-      <div className="p-5 space-y-4">
-        {/* Area-specific topics */}
-        {areaTopics.length > 0 && (
-          <>
-            <h3 className="text-xs font-medium text-[#f59e0b] uppercase tracking-wider">
-              📍 {area.name}
-            </h3>
-            {areaTopics.map((topic) => (
-              <div key={topic.title} className="bg-[#f59e0b]/5 border border-[#f59e0b]/20 rounded-lg p-4">
-                <h4 className="text-sm font-medium text-[#f9fafb] flex items-center gap-2 mb-2">
-                  <span>{topic.icon}</span> {topic.title}
-                </h4>
-                <p className="text-xs text-[#9ca3af] leading-relaxed">{topic.content}</p>
+        {/* Modal Content */}
+        <div className="p-5 overflow-y-auto flex flex-col gap-4">
+          <div className="bg-[#12151E] border border-[#222736] rounded p-3">
+            <span className="text-[10px] font-mono tracking-wider text-[#F59E0B] uppercase">
+              Current Region Focus · {area.name}
+            </span>
+            <p className="text-xs text-[#F1F5F9] font-medium mt-1">{area.phenomenon}</p>
+            <p className="text-xs text-[#8A94A6] leading-relaxed mt-1">{area.description}</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {GENERAL_PHYSICS.map((item, idx) => (
+              <div
+                key={idx}
+                className="bg-[#12151E]/60 border border-[#222736] rounded p-3 flex flex-col gap-1.5"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#F59E0B]" />
+                  <h4 className="text-xs font-semibold text-[#F1F5F9]">{item.title}</h4>
+                </div>
+                <p className="text-[11px] text-[#8A94A6] leading-relaxed">{item.content}</p>
               </div>
             ))}
-            <div className="border-t border-[#1f2937] my-4" />
-          </>
-        )}
-
-        {/* General SAR physics */}
-        <h3 className="text-xs font-medium text-[#06b6d4] uppercase tracking-wider">
-          🎓 SAR Fundamentals
-        </h3>
-        {generalTopics.map((topic) => (
-          <div key={topic.title} className="bg-[#1f2937]/50 border border-[#374151] rounded-lg p-4">
-            <h4 className="text-sm font-medium text-[#f9fafb] flex items-center gap-2 mb-2">
-              <span>{topic.icon}</span> {topic.title}
-            </h4>
-            <p className="text-xs text-[#9ca3af] leading-relaxed">{topic.content}</p>
           </div>
-        ))}
+        </div>
+
+        {/* Modal Footer */}
+        <div className="px-5 py-3 border-t border-[#222736] bg-[#12151E]/40 flex justify-between items-center text-xs">
+          <span className="text-[#8A94A6] font-mono text-[11px]">NASA / ISRO SAR Calibration Standards</span>
+          <button
+            onClick={onClose}
+            className="px-3 py-1 bg-[#222736] hover:bg-[#2c3345] text-[#F1F5F9] text-xs font-medium rounded transition-colors"
+          >
+            Done
+          </button>
+        </div>
       </div>
     </div>
   );

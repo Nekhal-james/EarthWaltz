@@ -1,34 +1,51 @@
 'use client';
 
-import { useRef, useEffect, useCallback, useState } from 'react';
+import { useRef, useEffect, useCallback } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { StudyArea, LayerInfo, BasemapStyle } from '@/types';
 
+// NASA VIIRS SNPP True-Color full historical composite (zero orbital gaps/zebra stripes)
 const GIBS_TRUECOLOR_STYLE: maplibregl.StyleSpecification = {
   version: 8,
   sources: {
-    'gibs-modis': {
+    'gibs-viirs': {
       type: 'raster',
       tiles: [
-        'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/default/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg',
+        'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_SNPP_CorrectedReflectance_TrueColor/default/2025-09-15/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg',
       ],
       tileSize: 256,
       attribution: '© NASA EOSDIS GIBS',
       maxzoom: 9,
     },
+    'carto-labels': {
+      type: 'raster',
+      tiles: ['https://basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}.png'],
+      tileSize: 256,
+      attribution: '© CartoDB',
+      maxzoom: 20,
+    },
   },
   layers: [
     {
-      id: 'gibs-modis-layer',
+      id: 'gibs-viirs-layer',
       type: 'raster',
-      source: 'gibs-modis',
+      source: 'gibs-viirs',
       minzoom: 0,
       maxzoom: 22,
+    },
+    {
+      id: 'carto-labels-layer',
+      type: 'raster',
+      source: 'carto-labels',
+      minzoom: 0,
+      maxzoom: 22,
+      paint: { 'raster-opacity': 0.8 },
     },
   ],
 };
 
+// Esri World Imagery blended with dark reference labels (crisp, zero orbital gaps)
 const ESRI_SATELLITE_STYLE: maplibregl.StyleSpecification = {
   version: 8,
   sources: {
@@ -41,6 +58,13 @@ const ESRI_SATELLITE_STYLE: maplibregl.StyleSpecification = {
       attribution: '© Esri, Maxar, Earthstar Geographics',
       maxzoom: 19,
     },
+    'carto-labels': {
+      type: 'raster',
+      tiles: ['https://basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}.png'],
+      tileSize: 256,
+      attribution: '© CartoDB',
+      maxzoom: 20,
+    },
   },
   layers: [
     {
@@ -50,21 +74,29 @@ const ESRI_SATELLITE_STYLE: maplibregl.StyleSpecification = {
       minzoom: 0,
       maxzoom: 22,
     },
+    {
+      id: 'carto-labels-layer',
+      type: 'raster',
+      source: 'carto-labels',
+      minzoom: 0,
+      maxzoom: 22,
+      paint: { 'raster-opacity': 0.8 },
+    },
   ],
 };
 
-const BASEMAPS: Record<BasemapStyle, { style: string | maplibregl.StyleSpecification; label: string }> = {
+export const BASEMAPS: Record<BasemapStyle, { style: string | maplibregl.StyleSpecification; label: string }> = {
+  'esri-satellite': {
+    style: ESRI_SATELLITE_STYLE,
+    label: 'Satellite',
+  },
   'dark-matter': {
     style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
-    label: 'Dark Matter (SAR Focus)',
+    label: 'Dark Matter',
   },
   'gibs-truecolor': {
     style: GIBS_TRUECOLOR_STYLE,
-    label: 'NASA GIBS True-Color',
-  },
-  'esri-satellite': {
-    style: ESRI_SATELLITE_STYLE,
-    label: 'High-Res Satellite',
+    label: 'NASA VIIRS',
   },
   positron: {
     style: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
@@ -76,58 +108,67 @@ interface GlobeProps {
   areas: StudyArea[];
   activeArea: StudyArea;
   activeLayer: LayerInfo | null;
-  flyTo: { lat: number; lng: number; zoom: number; bearing: number; pitch: number } | null;
   onAreaClick: (area: StudyArea) => void;
   ancillaryVisible: string[];
   onCursorMove?: (coords: { lat: number; lng: number } | null) => void;
+  basemap?: BasemapStyle;
   opacity?: number;
-  onOpacityChange?: (opacity: number) => void;
 }
 
 export default function Globe({
   areas,
   activeArea,
   activeLayer,
-  flyTo,
   onAreaClick,
   ancillaryVisible,
   onCursorMove,
-  opacity: parentOpacity,
-  onOpacityChange,
+  basemap = 'esri-satellite',
+  opacity = 0.85,
 }: GlobeProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
-  const [basemap, setBasemap] = useState<BasemapStyle>('dark-matter');
-  const [showBasemapPicker, setShowBasemapPicker] = useState(false);
-  const [localOpacity, setLocalOpacity] = useState(parentOpacity ?? 0.85);
+  const isLoadedRef = useRef(false);
 
-  const opacity = parentOpacity ?? localOpacity;
+  // Critical Zoom & Viewport Alignment: Fit bounds with left inspector sidebar padding
+  const fitAreaBounds = useCallback((area: StudyArea, duration = 1400) => {
+    const map = mapRef.current;
+    if (!map) return;
 
-  const handleOpacitySlider = (val: number) => {
-    setLocalOpacity(val);
-    onOpacityChange?.(val);
-    if (mapRef.current && mapRef.current.getLayer('sar-overlay-layer')) {
-      mapRef.current.setPaintProperty('sar-overlay-layer', 'raster-opacity', val);
-    }
-  };
+    const bbox = area.bbox || [
+      area.lng - 0.5,
+      area.lat - 0.5,
+      area.lng + 0.5,
+      area.lat + 0.5,
+    ];
+    const [west, south, east, north] = bbox;
 
-  // Helper to attach or refresh SAR image raster and glowing bounding box
+    map.fitBounds(
+      [
+        [west, south],
+        [east, north],
+      ],
+      {
+        padding: { top: 80, bottom: 120, left: 380, right: 60 },
+        duration: duration,
+        essential: true,
+        maxZoom: 11,
+      }
+    );
+  }, []);
+
+  // Render native MapLibre image raster and hairline boundary outline
   const renderSarOverlay = useCallback(() => {
     const map = mapRef.current;
     if (!map || !map.isStyleLoaded()) return;
 
-    // Clean up existing overlay layers & sources if present
     if (map.getLayer('sar-overlay-layer')) map.removeLayer('sar-overlay-layer');
     if (map.getSource('sar-overlay')) map.removeSource('sar-overlay');
     if (map.getLayer('sar-bbox-outline')) map.removeLayer('sar-bbox-outline');
-    if (map.getLayer('sar-bbox-glow')) map.removeLayer('sar-bbox-glow');
-    if (map.getLayer('sar-bbox-fill')) map.removeLayer('sar-bbox-fill');
     if (map.getSource('sar-bbox')) map.removeSource('sar-bbox');
 
     if (!activeLayer) return;
 
-    // Use exact geographic bounding box from study area metadata
     const bbox = activeArea.bbox || [
       activeArea.lng - 0.5,
       activeArea.lat - 0.5,
@@ -158,11 +199,11 @@ export default function Globe({
         source: 'sar-overlay',
         paint: {
           'raster-opacity': opacity,
-          'raster-fade-duration': 250,
+          'raster-fade-duration': 200,
         },
       });
 
-      // Bounding box feature
+      // Hairline boundary polygon
       const bboxFeature: GeoJSON.Feature<GeoJSON.Polygon> = {
         type: 'Feature',
         properties: {},
@@ -185,65 +226,43 @@ export default function Globe({
         data: bboxFeature,
       });
 
-      // Subtle fill
-      map.addLayer({
-        id: 'sar-bbox-fill',
-        type: 'fill',
-        source: 'sar-bbox',
-        paint: {
-          'fill-color': '#06b6d4',
-          'fill-opacity': 0.05,
-        },
-      });
-
-      // Outer glow
-      map.addLayer({
-        id: 'sar-bbox-glow',
-        type: 'line',
-        source: 'sar-bbox',
-        paint: {
-          'line-color': '#f59e0b',
-          'line-width': 5,
-          'line-opacity': 0.35,
-          'line-blur': 3,
-        },
-      });
-
-      // Crisp neon dashed outline
       map.addLayer({
         id: 'sar-bbox-outline',
         type: 'line',
         source: 'sar-bbox',
         paint: {
-          'line-color': '#06b6d4',
-          'line-width': 2,
-          'line-dasharray': [4, 2],
+          'line-color': '#F59E0B',
+          'line-width': 1.5,
+          'line-opacity': 0.8,
         },
       });
     } catch (err) {
-      console.warn('MapLibre overlay render error:', err);
+      console.warn('MapLibre overlay render warning:', err);
     }
   }, [activeArea, activeLayer, opacity]);
 
-  // Initialize MapLibre Map with 3D Globe projection
+  // Initialize MapLibre Map with renderWorldCopies: false to prevent duplicate globes
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
     const map = new maplibregl.Map({
       container: containerRef.current,
       style: BASEMAPS[basemap].style,
+      renderWorldCopies: false,
       center: [activeArea.lng, activeArea.lat],
-      zoom: activeArea.zoom,
-      pitch: activeArea.pitch,
-      bearing: activeArea.bearing,
+      zoom: activeArea.zoom || 9,
+      pitch: 0,
+      bearing: 0,
       projection: { type: 'globe' },
-      attributionControl: true,
+      attributionControl: false,
     });
 
-    map.addControl(new maplibregl.NavigationControl(), 'top-right');
+    map.addControl(new maplibregl.NavigationControl({ showCompass: true }), 'top-right');
 
     map.on('load', () => {
+      isLoadedRef.current = true;
       renderSarOverlay();
+      fitAreaBounds(activeArea, 0);
     });
 
     map.on('style.load', () => {
@@ -251,15 +270,11 @@ export default function Globe({
     });
 
     map.on('mousemove', (e) => {
-      if (onCursorMove) {
-        onCursorMove({ lat: e.lngLat.lat, lng: e.lngLat.lng });
-      }
+      onCursorMove?.({ lat: e.lngLat.lat, lng: e.lngLat.lng });
     });
 
     map.on('mouseout', () => {
-      if (onCursorMove) {
-        onCursorMove(null);
-      }
+      onCursorMove?.(null);
     });
 
     mapRef.current = map;
@@ -269,16 +284,39 @@ export default function Globe({
       markersRef.current = [];
       map.remove();
       mapRef.current = null;
+      isLoadedRef.current = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Update basemap style
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !isLoadedRef.current) return;
+    map.setStyle(BASEMAPS[basemap].style);
+  }, [basemap]);
 
   // Update SAR raster whenever activeArea, activeLayer, or opacity changes
   useEffect(() => {
     renderSarOverlay();
   }, [renderSarOverlay]);
 
-  // Update markers on study area changes
+  // Update dynamic raster opacity directly on the MapLibre layer without rebuilding source
+  useEffect(() => {
+    const map = mapRef.current;
+    if (map && map.getLayer('sar-overlay-layer')) {
+      map.setPaintProperty('sar-overlay-layer', 'raster-opacity', opacity);
+    }
+  }, [opacity]);
+
+  // Fly/Fit camera bounds when active area changes
+  useEffect(() => {
+    if (isLoadedRef.current) {
+      fitAreaBounds(activeArea, 1400);
+    }
+  }, [activeArea, fitAreaBounds]);
+
+  // Render minimal, clean geographic markers for other study areas
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -288,23 +326,18 @@ export default function Globe({
 
     areas.forEach((area) => {
       const el = document.createElement('div');
-      el.className = 'pulse-marker';
-      el.style.width = '16px';
-      el.style.height = '16px';
-      el.style.borderRadius = '50%';
-      el.style.backgroundColor = area.hometown ? '#d946ef' : '#f59e0b';
-      el.style.position = 'relative';
-      el.style.cursor = 'pointer';
-      el.style.boxShadow = area.hometown
-        ? '0 0 15px rgba(217, 70, 239, 0.8)'
-        : '0 0 12px rgba(245, 158, 11, 0.8)';
-      el.title = `${area.name} — ${area.phenomenon}`;
+      el.className = 'group cursor-pointer flex items-center justify-center';
+      el.style.width = '14px';
+      el.style.height = '14px';
 
-      if (area.id === activeArea.id) {
-        el.style.width = '22px';
-        el.style.height = '22px';
-        el.style.border = '3px solid #ffffff';
-      }
+      const dot = document.createElement('div');
+      const isCurrent = area.id === activeArea.id;
+      dot.className = `w-2.5 h-2.5 rounded-full transition-transform ${
+        isCurrent
+          ? 'bg-[#F59E0B] ring-2 ring-[#F59E0B]/40 scale-125'
+          : 'bg-[#8A94A6] hover:bg-[#F1F5F9] hover:scale-110'
+      }`;
+      el.appendChild(dot);
 
       el.addEventListener('click', (ev) => {
         ev.stopPropagation();
@@ -319,83 +352,5 @@ export default function Globe({
     });
   }, [areas, activeArea, onAreaClick]);
 
-  // Camera Fly-To on selection
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !flyTo) return;
-
-    map.flyTo({
-      center: [flyTo.lng, flyTo.lat],
-      zoom: flyTo.zoom,
-      pitch: flyTo.pitch,
-      bearing: flyTo.bearing,
-      duration: 2200,
-      essential: true,
-    });
-  }, [flyTo]);
-
-  // Basemap switcher
-  const handleBasemapChange = useCallback((style: BasemapStyle) => {
-    setBasemap(style);
-    setShowBasemapPicker(false);
-    if (mapRef.current) {
-      mapRef.current.setStyle(BASEMAPS[style].style);
-    }
-  }, []);
-
-  return (
-    <div ref={containerRef} className="w-full h-full absolute inset-0">
-      {/* Basemap Picker & Opacity Slider Toolbar */}
-      <div className="absolute top-16 right-3 z-10 flex flex-col items-end gap-2">
-        {/* Basemap Switcher Button */}
-        <div className="relative">
-          <button
-            onClick={() => setShowBasemapPicker((p) => !p)}
-            className="flex items-center gap-1.5 bg-[#111827]/90 backdrop-blur-md border border-[#374151] rounded-lg px-2.5 py-1.5 text-xs text-[#9ca3af] hover:text-[#f59e0b] shadow-lg transition-colors"
-            title="Switch basemap"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-            </svg>
-            <span className="font-mono text-[11px] text-gray-200">{BASEMAPS[basemap].label}</span>
-          </button>
-
-          {showBasemapPicker && (
-            <div className="absolute right-0 mt-1 bg-[#111827]/95 backdrop-blur-md border border-[#374151] rounded-lg overflow-hidden shadow-2xl z-30 min-w-[130px]">
-              {(Object.keys(BASEMAPS) as BasemapStyle[]).map((key) => (
-                <button
-                  key={key}
-                  onClick={() => handleBasemapChange(key)}
-                  className={`block w-full text-left px-3 py-1.5 text-xs font-mono transition-colors ${
-                    basemap === key
-                      ? 'bg-[#f59e0b]/20 text-[#f59e0b] font-bold'
-                      : 'text-[#9ca3af] hover:bg-[#1f2937] hover:text-[#f9fafb]'
-                  }`}
-                >
-                  {BASEMAPS[key].label}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* SAR Opacity Slider Pill */}
-        <div className="flex items-center gap-2 bg-[#111827]/90 backdrop-blur-md border border-[#374151] rounded-lg px-2.5 py-1.5 shadow-lg">
-          <span className="text-[10px] font-mono text-gray-400">SAR Opacity</span>
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.05"
-            value={opacity}
-            onChange={(e) => handleOpacitySlider(parseFloat(e.target.value))}
-            className="w-16 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-[#f59e0b]"
-          />
-          <span className="text-[10px] font-mono font-bold text-[#f59e0b] w-7 text-right">
-            {Math.round(opacity * 100)}%
-          </span>
-        </div>
-      </div>
-    </div>
-  );
+  return <div ref={containerRef} className="w-full h-full absolute inset-0" />;
 }
