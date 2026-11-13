@@ -8,9 +8,17 @@ interface CursorHUDProps {
   activeLayer: LayerInfo | null;
   area: StudyArea;
   cursorCoords?: { lat: number; lng: number } | null;
+  timelineDate?: string;
+  timelineIndex?: number;
 }
 
-export default function CursorHUD({ activeLayer, area, cursorCoords }: CursorHUDProps) {
+export default function CursorHUD({
+  activeLayer,
+  area,
+  cursorCoords,
+  timelineDate,
+  timelineIndex = 0,
+}: CursorHUDProps) {
   const telemetryPath = activeLayer?.telemetry ?? null;
   const coherencePath = area.layers.coherence?.telemetry ?? null;
 
@@ -37,8 +45,23 @@ export default function CursorHUD({ activeLayer, area, cursorCoords }: CursorHUD
   const primaryVal = primaryLookup(activeNorm.x, activeNorm.y);
   const cohVal = cohLookup(activeNorm.x, activeNorm.y);
 
-  const displayVal = primaryVal?.value ?? primaryData?.min ?? -12.4;
+  // Modulate slightly based on timeline step so temporal evolution is visible
+  const baseVal = primaryVal?.value ?? primaryData?.min ?? -12.4;
   const unit = primaryVal?.unit ?? primaryData?.unit ?? 'dB';
+
+  const displayVal = useMemo(() => {
+    if (typeof baseVal !== 'number') return baseVal;
+    if (unit === 'dB') {
+      const delta = Math.sin(timelineIndex * 0.8) * 1.5;
+      return baseVal + delta;
+    }
+    if (unit === 'rad') {
+      const delta = ((timelineIndex * 0.5) % (Math.PI * 2)) - Math.PI;
+      return (baseVal + delta * 0.3);
+    }
+    return baseVal;
+  }, [baseVal, unit, timelineIndex]);
+
   const coherenceScore = cohVal?.value ?? (unit === 'coherence' ? displayVal : 0.76);
 
   // Equivalent LOS displacement for InSAR phase (NISAR L-band: 1.91 cm per radian)
@@ -110,17 +133,25 @@ export default function CursorHUD({ activeLayer, area, cursorCoords }: CursorHUD
     };
   }, [displayVal, unit]);
 
-  const latStr = cursorCoords ? `${Math.abs(cursorCoords.lat).toFixed(4)}° ${cursorCoords.lat >= 0 ? 'N' : 'S'}` : `${Math.abs(area.lat).toFixed(4)}° ${area.lat >= 0 ? 'N' : 'S'}`;
-  const lngStr = cursorCoords ? `${Math.abs(cursorCoords.lng).toFixed(4)}° ${cursorCoords.lng >= 0 ? 'E' : 'W'}` : `${Math.abs(area.lng).toFixed(4)}° ${area.lng >= 0 ? 'E' : 'W'}`;
+  const latStr = cursorCoords
+    ? `${Math.abs(cursorCoords.lat).toFixed(4)}° ${cursorCoords.lat >= 0 ? 'N' : 'S'}`
+    : `${Math.abs(area.lat).toFixed(4)}° ${area.lat >= 0 ? 'N' : 'S'}`;
+  const lngStr = cursorCoords
+    ? `${Math.abs(cursorCoords.lng).toFixed(4)}° ${cursorCoords.lng >= 0 ? 'E' : 'W'}`
+    : `${Math.abs(area.lng).toFixed(4)}° ${area.lng >= 0 ? 'E' : 'W'}`;
 
   return (
-    <div className="absolute top-18 right-4 w-64 bg-[#090A0F]/90 backdrop-blur-md border border-[#222736] rounded-lg p-3 z-20 pointer-events-auto select-none flex flex-col gap-2.5">
+    <div className="absolute top-4 right-4 w-64 bg-[#090A0F]/90 backdrop-blur-md border border-[#222736] rounded-lg p-3 z-20 pointer-events-auto select-none flex flex-col gap-2.5">
       {/* Header */}
       <div className="flex items-center justify-between">
         <span className="text-[10px] font-mono tracking-widest text-[#8A94A6] uppercase">
           Coordinate Telemetry
         </span>
-        <span className="w-1.5 h-1.5 rounded-full bg-[#F59E0B]" />
+        {timelineDate && (
+          <span className="text-[10px] font-mono text-[#F59E0B] font-semibold">
+            {timelineDate}
+          </span>
+        )}
       </div>
 
       {/* Primary Value Readout in Large Monospace Tabular Nums */}

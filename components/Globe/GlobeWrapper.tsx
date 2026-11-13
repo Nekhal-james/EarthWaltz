@@ -14,6 +14,8 @@ interface GlobeWrapperProps {
   onCursorMove?: (coords: { lat: number; lng: number } | null) => void;
   basemap?: BasemapStyle;
   opacity?: number;
+  captureTrigger?: number;
+  onSnapshotExported?: (filename: string) => void;
 }
 
 export default function GlobeWrapper(props: GlobeWrapperProps) {

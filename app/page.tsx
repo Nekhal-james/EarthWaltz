@@ -22,7 +22,13 @@ export default function HomePage() {
   const [cursorCoords, setCursorCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [ancillaryVisible, setAncillaryVisible] = useState<string[]>([]);
 
-  // Modals & Tour States
+  // Timeline state synced with BottomDock and CursorHUD
+  const [timelineDate, setTimelineDate] = useState<string>('');
+  const [timelineDateIndex, setTimelineDateIndex] = useState<number>(0);
+
+  // Snapshot & Modals
+  const [captureTrigger, setCaptureTrigger] = useState<number>(0);
+  const [snapshotToast, setSnapshotToast] = useState<string | null>(null);
   const [showSlider, setShowSlider] = useState(false);
   const [showExplainer, setShowExplainer] = useState(false);
   const [showResources, setShowResources] = useState(false);
@@ -38,6 +44,7 @@ export default function HomePage() {
           ? area.default_layer
           : Object.keys(area.layers)[0] || 'hh';
       setActiveLayerKey(signatureLayer);
+      setTimelineDateIndex(0);
     },
     [setActiveArea]
   );
@@ -68,6 +75,11 @@ export default function HomePage() {
     });
   }, [areas, handleAreaChange]);
 
+  const handleSnapshotSuccess = useCallback((filename: string) => {
+    setSnapshotToast(filename);
+    setTimeout(() => setSnapshotToast(null), 4000);
+  }, []);
+
   const activeLayer = activeArea.layers[activeLayerKey] || Object.values(activeArea.layers)[0];
 
   if (loading) {
@@ -94,6 +106,7 @@ export default function HomePage() {
         showExplainer={showExplainer}
         onToggleResources={() => setShowResources((p) => !p)}
         showResources={showResources}
+        onExportSnapshot={() => setCaptureTrigger((prev) => prev + 1)}
         isTourPlaying={isTourPlaying}
         onToggleTour={handleToggleTour}
         tourIndex={tourIndex}
@@ -130,6 +143,8 @@ export default function HomePage() {
             onCursorMove={setCursorCoords}
             basemap={basemap}
             opacity={sarOpacity}
+            captureTrigger={captureTrigger}
+            onSnapshotExported={handleSnapshotSuccess}
           />
 
           {/* ZONE 4: COMPACT CURSOR HUD (Top-Right of Map) */}
@@ -137,13 +152,27 @@ export default function HomePage() {
             activeLayer={activeLayer}
             area={activeArea}
             cursorCoords={cursorCoords}
+            timelineDate={timelineDate}
+            timelineIndex={timelineDateIndex}
           />
 
-          {/* ZONE 3: BOTTOM HUD DOCK (Colorbar Legend + Timeline Scrubber) */}
+          {/* ZONE 3: BOTTOM HUD DOCK (Colorbar Legend + Animated Timeline Scrubber) */}
           <BottomDock
             activeLayer={activeLayer}
             timeseriesPath={activeArea.timeseries}
+            onDateChange={(idx, d) => {
+              setTimelineDateIndex(idx);
+              setTimelineDate(d);
+            }}
           />
+
+          {/* SNAPSHOT TOAST NOTIFICATION */}
+          {snapshotToast && (
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-[#12151E] border border-[#F59E0B] rounded px-4 py-2 text-xs font-mono text-[#F1F5F9] shadow-2xl z-50 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-[#F59E0B]" />
+              <span>Snapshot exported: {snapshotToast}</span>
+            </div>
+          )}
         </div>
       </div>
 

@@ -1,17 +1,30 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import type { LayerInfo } from '@/types';
 import { useTimeSeries } from '@/hooks/useTimeSeries';
 
 interface BottomDockProps {
   activeLayer: LayerInfo | null;
   timeseriesPath: string;
+  onDateChange?: (dateIndex: number, dateStr: string) => void;
 }
 
-export default function BottomDock({ activeLayer, timeseriesPath }: BottomDockProps) {
-  const { data, loading, currentIndex, setCurrentIndex, playing, togglePlay, speed, cycleSpeed } =
-    useTimeSeries(timeseriesPath);
+export default function BottomDock({
+  activeLayer,
+  timeseriesPath,
+  onDateChange,
+}: BottomDockProps) {
+  const {
+    data,
+    loading,
+    currentIndex,
+    setCurrentIndex,
+    playing,
+    togglePlay,
+    speed,
+    cycleSpeed,
+  } = useTimeSeries(timeseriesPath);
 
   const unit = activeLayer?.unit || 'dB';
   const label = activeLayer?.label || 'SAR Backscatter';
@@ -62,6 +75,23 @@ export default function BottomDock({ activeLayer, timeseriesPath }: BottomDockPr
   const currentDate = dates[currentIndex] || '2024-08-16';
   const progress = dates.length > 1 ? (currentIndex / (dates.length - 1)) * 100 : 0;
 
+  // Propagate timeline date change to parent
+  useEffect(() => {
+    if (dates.length > 0) {
+      onDateChange?.(currentIndex, currentDate);
+    }
+  }, [currentIndex, currentDate, dates, onDateChange]);
+
+  const handleStepPrev = () => {
+    if (!dates.length) return;
+    setCurrentIndex((prev) => (prev - 1 + dates.length) % dates.length);
+  };
+
+  const handleStepNext = () => {
+    if (!dates.length) return;
+    setCurrentIndex((prev) => (prev + 1) % dates.length);
+  };
+
   return (
     <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[92vw] max-w-2xl bg-[#090A0F]/95 backdrop-blur-md border border-[#222736] rounded-lg shadow-2xl p-3 flex flex-col gap-2.5 z-20 pointer-events-auto select-none">
       {/* TOP: CALIBRATED COLORBAR LEGEND */}
@@ -92,23 +122,49 @@ export default function BottomDock({ activeLayer, timeseriesPath }: BottomDockPr
       <div className="border-t border-[#222736]" />
 
       {/* BOTTOM: TIMELINE SCRUBBER */}
-      <div className="flex items-center gap-3">
-        {/* Play/Pause Step Button */}
+      <div className="flex items-center gap-2.5">
+        {/* Step Prev Button */}
+        <button
+          onClick={handleStepPrev}
+          className="w-7 h-7 rounded bg-[#12151E] border border-[#222736] hover:border-[#F59E0B] flex items-center justify-center text-[#8A94A6] hover:text-[#F1F5F9] transition-colors shrink-0"
+          title="Previous acquisition date"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+
+        {/* Play/Pause Button */}
         <button
           onClick={togglePlay}
-          className="w-7 h-7 rounded bg-[#12151E] border border-[#222736] hover:border-[#F59E0B] flex items-center justify-center text-[#F1F5F9] transition-colors shrink-0"
-          title={playing ? 'Pause' : 'Play timeseries'}
+          className={`w-7 h-7 rounded flex items-center justify-center transition-colors shrink-0 border ${
+            playing
+              ? 'bg-[#F59E0B]/20 text-[#F59E0B] border-[#F59E0B]'
+              : 'bg-[#12151E] text-[#F1F5F9] border-[#222736] hover:border-[#F59E0B]'
+          }`}
+          title={playing ? 'Pause timeline animation' : 'Play continuous timeline animation'}
         >
           {playing ? (
-            <svg className="w-3.5 h-3.5 text-[#F59E0B]" fill="currentColor" viewBox="0 0 24 24">
+            <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
               <rect x="6" y="4" width="4" height="16" />
               <rect x="14" y="4" width="4" height="16" />
             </svg>
           ) : (
-            <svg className="w-3.5 h-3.5 text-[#F1F5F9] ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+            <svg className="w-3.5 h-3.5 fill-current ml-0.5" viewBox="0 0 24 24">
               <polygon points="5,3 19,12 5,21" />
             </svg>
           )}
+        </button>
+
+        {/* Step Next Button */}
+        <button
+          onClick={handleStepNext}
+          className="w-7 h-7 rounded bg-[#12151E] border border-[#222736] hover:border-[#F59E0B] flex items-center justify-center text-[#8A94A6] hover:text-[#F1F5F9] transition-colors shrink-0"
+          title="Next acquisition date"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
         </button>
 
         {/* Scrubber Track */}
@@ -118,7 +174,7 @@ export default function BottomDock({ activeLayer, timeseriesPath }: BottomDockPr
             onClick={(e) => {
               if (!dates.length) return;
               const rect = e.currentTarget.getBoundingClientRect();
-              const pct = (e.clientX - rect.left) / rect.width;
+              const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
               setCurrentIndex(Math.round(pct * (dates.length - 1)));
             }}
           >
@@ -138,6 +194,7 @@ export default function BottomDock({ activeLayer, timeseriesPath }: BottomDockPr
           {dates.length > 0 && (
             <div className="flex justify-between font-mono text-[9px] text-[#8A94A6] tabular-nums">
               <span>{dates[0]}</span>
+              <span className="text-[#8A94A6]/60">Step {currentIndex + 1} of {dates.length}</span>
               <span>{dates[dates.length - 1]}</span>
             </div>
           )}
@@ -145,7 +202,8 @@ export default function BottomDock({ activeLayer, timeseriesPath }: BottomDockPr
 
         {/* Current Acquisition Timestamp */}
         <div className="flex items-center gap-2 shrink-0">
-          <div className="bg-[#12151E] border border-[#222736] rounded px-2 py-1 text-center">
+          <div className="bg-[#12151E] border border-[#222736] rounded px-2.5 py-1 text-center flex items-center gap-1.5">
+            {playing && <span className="w-1.5 h-1.5 rounded-full bg-[#F59E0B] animate-pulse" />}
             <span className="font-mono text-xs font-semibold text-[#F59E0B] tabular-nums">
               {currentDate}
             </span>
@@ -154,8 +212,8 @@ export default function BottomDock({ activeLayer, timeseriesPath }: BottomDockPr
           {/* Speed Toggle */}
           <button
             onClick={cycleSpeed}
-            className="font-mono text-[10px] text-[#8A94A6] hover:text-[#F1F5F9] bg-[#12151E] border border-[#222736] rounded px-1.5 py-1 tabular-nums"
-            title="Playback speed"
+            className="font-mono text-[10px] text-[#8A94A6] hover:text-[#F1F5F9] bg-[#12151E] border border-[#222736] rounded px-1.5 py-1 tabular-nums transition-colors"
+            title="Playback speed multiplier"
           >
             {speed}x
           </button>

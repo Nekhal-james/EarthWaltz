@@ -113,6 +113,8 @@ interface GlobeProps {
   onCursorMove?: (coords: { lat: number; lng: number } | null) => void;
   basemap?: BasemapStyle;
   opacity?: number;
+  captureTrigger?: number;
+  onSnapshotExported?: (filename: string) => void;
 }
 
 export default function Globe({
@@ -124,6 +126,8 @@ export default function Globe({
   onCursorMove,
   basemap = 'esri-satellite',
   opacity = 0.85,
+  captureTrigger = 0,
+  onSnapshotExported,
 }: GlobeProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -241,7 +245,88 @@ export default function Globe({
     }
   }, [activeArea, activeLayer, opacity]);
 
-  // Initialize MapLibre Map with renderWorldCopies: false to prevent duplicate globes
+  // Export high-resolution annotated snapshot
+  const exportSnapshot = useCallback(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    try {
+      const mapCanvas = map.getCanvas();
+      const width = mapCanvas.width;
+      const height = mapCanvas.height;
+
+      const offscreen = document.createElement('canvas');
+      const footerHeight = 64;
+      offscreen.width = width;
+      offscreen.height = height + footerHeight;
+
+      const ctx = offscreen.getContext('2d');
+      if (!ctx) return;
+
+      // Draw active map canvas
+      ctx.drawImage(mapCanvas, 0, 0);
+
+      // Draw aerospace instrument telemetry footer
+      ctx.fillStyle = '#090A0F';
+      ctx.fillRect(0, height, width, footerHeight);
+
+      // Hairline accent border
+      ctx.fillStyle = '#222736';
+      ctx.fillRect(0, height, width, 1);
+
+      // Accent amber marker
+      ctx.fillStyle = '#F59E0B';
+      ctx.fillRect(20, height + 16, 4, 32);
+
+      // Title & region info
+      ctx.fillStyle = '#F1F5F9';
+      ctx.font = 'bold 14px monospace';
+      ctx.fillText(`EARTHWALTZ: GLOBAL SAR OBSERVATORY · ${activeArea.name.toUpperCase()}`, 34, height + 28);
+
+      ctx.fillStyle = '#8A94A6';
+      ctx.font = '11px monospace';
+      const layerText = activeLayer ? `${activeLayer.label} (${activeLayer.unit})` : 'Calibrated SAR Backscatter';
+      const granuleText = activeArea.provenance?.granule_id || 'ALAV2A278633410';
+      const platformText = activeArea.provenance?.platform || 'NISAR L-Band (24 cm)';
+      ctx.fillText(`CHANNEL: ${layerText} | GRANULE: ${granuleText} | SENSOR: ${platformText}`, 34, height + 46);
+
+      // Right-aligned metadata
+      ctx.textAlign = 'right';
+      ctx.fillStyle = '#F59E0B';
+      ctx.font = '11px monospace';
+      ctx.fillText(`UTC: ${new Date().toISOString().replace('T', ' ').slice(0, 19)}`, width - 20, height + 28);
+
+      ctx.fillStyle = '#8A94A6';
+      ctx.fillText('NASA / ISRO SPACE APPS CHALLENGE 2026', width - 20, height + 46);
+
+      // Generate PNG and trigger download
+      offscreen.toBlob((blob) => {
+        if (!blob) return;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const cleanName = activeArea.name.toLowerCase().replace(/[^a-z0-9]/g, '_');
+        const filename = `EarthWaltz_${cleanName}_${Date.now()}.png`;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        onSnapshotExported?.(filename);
+      }, 'image/png');
+    } catch (err) {
+      console.error('Error generating snapshot:', err);
+    }
+  }, [activeArea, activeLayer, onSnapshotExported]);
+
+  // Trigger snapshot when captureTrigger changes
+  useEffect(() => {
+    if (captureTrigger > 0) {
+      exportSnapshot();
+    }
+  }, [captureTrigger, exportSnapshot]);
+
+  // Initialize MapLibre Map with preserveDrawingBuffer: true for clean snapshot export
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
@@ -249,6 +334,7 @@ export default function Globe({
       container: containerRef.current,
       style: BASEMAPS[basemap].style,
       renderWorldCopies: false,
+      preserveDrawingBuffer: true,
       center: [activeArea.lng, activeArea.lat],
       zoom: activeArea.zoom || 9,
       pitch: 0,

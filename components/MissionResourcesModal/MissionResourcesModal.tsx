@@ -60,21 +60,23 @@ const OFFICIAL_RESOURCES = [
 ];
 
 export default function MissionResourcesModal({ activeArea, onClose }: MissionResourcesModalProps) {
-  const [activeTab, setActiveTab] = useState<'resources' | 'stac'>('resources');
+  const [activeTab, setActiveTab] = useState<'resources' | 'asf' | 'stac'>('resources');
   const [liveResults, setLiveResults] = useState<any[]>([]);
+  const [stacResults, setStacResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [queryError, setQueryError] = useState<string | null>(null);
 
+  // Live Query via /api/asf-proxy
   const handleQueryAsf = async () => {
     setLoading(true);
     setQueryError(null);
     try {
       const bboxStr = activeArea.bbox.join(',');
-      const res = await fetch(`/api/asf-proxy?bbox=${encodeURIComponent(bboxStr)}&platform=ALOS&maxResults=5`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const res = await fetch(`/api/asf-proxy?bbox=${encodeURIComponent(bboxStr)}&platform=ALOS&maxResults=6`);
+      if (!res.ok) throw new Error(`ASF API returned HTTP ${res.status}`);
       const data = await res.json();
-      const features = data?.features || (Array.isArray(data) && data[0]) || [];
-      setLiveResults(features);
+      const results = data?.results || [];
+      setLiveResults(results);
     } catch (err: any) {
       setQueryError(err.message || 'Error querying live ASF proxy');
     } finally {
@@ -82,11 +84,29 @@ export default function MissionResourcesModal({ activeArea, onClose }: MissionRe
     }
   };
 
+  // Live Query via /api/stac-search
+  const handleQueryStac = async () => {
+    setLoading(true);
+    setQueryError(null);
+    try {
+      const bboxStr = activeArea.bbox.join(',');
+      const res = await fetch(`/api/stac-search?bbox=${encodeURIComponent(bboxStr)}&limit=6`);
+      if (!res.ok) throw new Error(`STAC API returned HTTP ${res.status}`);
+      const data = await res.json();
+      const features = data?.features || [];
+      setStacResults(features);
+    } catch (err: any) {
+      setQueryError(err.message || 'Error querying live CMR STAC');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 bg-[#090A0F]/85 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-[#090A0F] border border-[#222736] rounded-lg w-full max-w-3xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+      <div className="bg-[#090A0F] border border-[#222736] rounded-lg w-full max-w-3xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden select-none">
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[#222736] bg-[#090A0F]">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#222736] bg-[#090A0F]">
           <div>
             <h3 className="text-sm font-semibold text-[#F1F5F9]">
               NASA Mission Resources and Live STAC Explorer
@@ -113,23 +133,39 @@ export default function MissionResourcesModal({ activeArea, onClose }: MissionRe
                 : 'border-transparent text-[#8A94A6] hover:text-[#F1F5F9]'
             }`}
           >
-            Official Mission Documentation
+            Mission Documentation
           </button>
           <button
-            onClick={() => setActiveTab('stac')}
+            onClick={() => {
+              setActiveTab('asf');
+              if (liveResults.length === 0) handleQueryAsf();
+            }}
+            className={`py-2.5 px-3 text-xs font-medium border-b-2 transition-colors ${
+              activeTab === 'asf'
+                ? 'border-[#F59E0B] text-[#F59E0B]'
+                : 'border-transparent text-[#8A94A6] hover:text-[#F1F5F9]'
+            }`}
+          >
+            NASA ASF Vertex API
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab('stac');
+              if (stacResults.length === 0) handleQueryStac();
+            }}
             className={`py-2.5 px-3 text-xs font-medium border-b-2 transition-colors ${
               activeTab === 'stac'
                 ? 'border-[#F59E0B] text-[#F59E0B]'
                 : 'border-transparent text-[#8A94A6] hover:text-[#F1F5F9]'
             }`}
           >
-            Live ASF Vertex and CMR STAC Query
+            NASA CMR STAC Catalog
           </button>
         </div>
 
         {/* Content Area */}
         <div className="p-5 overflow-y-auto space-y-3 flex-1">
-          {activeTab === 'resources' ? (
+          {activeTab === 'resources' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {OFFICIAL_RESOURCES.map((r) => (
                 <a
@@ -151,8 +187,10 @@ export default function MissionResourcesModal({ activeArea, onClose }: MissionRe
                 </a>
               ))}
             </div>
-          ) : (
-            <div className="space-y-4">
+          )}
+
+          {activeTab === 'asf' && (
+            <div className="space-y-3">
               <div className="flex items-center justify-between bg-[#12151E] p-3 rounded border border-[#222736]">
                 <div>
                   <div className="text-xs font-medium text-[#F1F5F9]">
@@ -167,7 +205,7 @@ export default function MissionResourcesModal({ activeArea, onClose }: MissionRe
                   disabled={loading}
                   className="px-3 py-1.5 bg-[#222736] hover:bg-[#2C3345] text-[#F1F5F9] rounded text-xs font-medium border border-[#222736] hover:border-[#F59E0B] transition disabled:opacity-50 font-mono"
                 >
-                  {loading ? 'Querying...' : 'Run Query'}
+                  {loading ? 'Querying ASF...' : 'Re-Query'}
                 </button>
               </div>
 
@@ -180,13 +218,15 @@ export default function MissionResourcesModal({ activeArea, onClose }: MissionRe
               {liveResults.length > 0 && (
                 <div className="space-y-2">
                   <div className="text-xs font-semibold text-[#8A94A6]">
-                    Granules Returned ({liveResults.length}):
+                    ASF DAAC Granules Returned ({liveResults.length}):
                   </div>
                   {liveResults.map((g: any, i: number) => {
-                    const name = g.granuleName || g.sceneName || g.properties?.sceneName || `Granule ${i + 1}`;
-                    const date = g.startTime || g.properties?.startTime || '2024';
-                    const browse = g.browse || g.properties?.browse;
-                    const browseUrl = Array.isArray(browse) ? browse[0] : browse;
+                    const name = g.granuleName || g.sceneName || `Granule ${i + 1}`;
+                    const date = g.startTime || '2024';
+                    const platform = g.platform || 'NISAR L-Band Surrogate';
+                    const browse = g.browse || [];
+                    const browseUrl = Array.isArray(browse) && browse.length > 0 ? browse[0] : null;
+
                     return (
                       <div
                         key={i}
@@ -194,7 +234,9 @@ export default function MissionResourcesModal({ activeArea, onClose }: MissionRe
                       >
                         <div className="min-w-0 flex-1">
                           <div className="font-mono text-[#F1F5F9] truncate font-medium">{name}</div>
-                          <div className="text-[#8A94A6] text-[11px] mt-0.5">Acquisition: {date}</div>
+                          <div className="text-[#8A94A6] text-[11px] mt-0.5">
+                            {platform} · Acquired: {date}
+                          </div>
                         </div>
                         {browseUrl && (
                           <a
@@ -203,7 +245,73 @@ export default function MissionResourcesModal({ activeArea, onClose }: MissionRe
                             rel="noreferrer"
                             className="ml-3 text-[11px] font-mono text-[#F59E0B] hover:underline shrink-0"
                           >
-                            View Browse ↗
+                            Browse Raster ↗
+                          </a>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'stac' && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between bg-[#12151E] p-3 rounded border border-[#222736]">
+                <div>
+                  <div className="text-xs font-medium text-[#F1F5F9]">
+                    NASA CMR STAC SpatioTemporal Asset Catalog
+                  </div>
+                  <div className="text-[11px] text-[#8A94A6] font-mono mt-0.5">
+                    Querying /api/stac-search with STAC 1.0 Spec
+                  </div>
+                </div>
+                <button
+                  onClick={handleQueryStac}
+                  disabled={loading}
+                  className="px-3 py-1.5 bg-[#222736] hover:bg-[#2C3345] text-[#F1F5F9] rounded text-xs font-medium border border-[#222736] hover:border-[#F59E0B] transition disabled:opacity-50 font-mono"
+                >
+                  {loading ? 'Querying STAC...' : 'Re-Query'}
+                </button>
+              </div>
+
+              {queryError && (
+                <div className="p-3 bg-red-950/40 border border-red-800/40 rounded text-xs text-red-300">
+                  {queryError}
+                </div>
+              )}
+
+              {stacResults.length > 0 && (
+                <div className="space-y-2">
+                  <div className="text-xs font-semibold text-[#8A94A6]">
+                    STAC Features Returned ({stacResults.length}):
+                  </div>
+                  {stacResults.map((feat: any, i: number) => {
+                    const id = feat.id || `Item ${i + 1}`;
+                    const time = feat.properties?.datetime || feat.properties?.start_time || '2024';
+                    const platform = feat.properties?.platform || feat.properties?.title || 'NISAR / ALOS';
+                    const dataHref = feat.assets?.data?.href || feat.links?.[0]?.href;
+
+                    return (
+                      <div
+                        key={i}
+                        className="p-3 bg-[#12151E] border border-[#222736] rounded flex items-center justify-between text-xs"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="font-mono text-[#F1F5F9] truncate font-medium">{id}</div>
+                          <div className="text-[#8A94A6] text-[11px] mt-0.5">
+                            {platform} · Datetime: {time}
+                          </div>
+                        </div>
+                        {dataHref && (
+                          <a
+                            href={dataHref}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="ml-3 text-[11px] font-mono text-[#F59E0B] hover:underline shrink-0"
+                          >
+                            STAC Asset ↗
                           </a>
                         )}
                       </div>

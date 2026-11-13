@@ -14,6 +14,7 @@ interface HeaderProps {
   showExplainer: boolean;
   onToggleResources: () => void;
   showResources: boolean;
+  onExportSnapshot?: () => void;
   isTourPlaying: boolean;
   onToggleTour: () => void;
   tourIndex?: number;
@@ -34,6 +35,7 @@ export default function Header({
   showExplainer,
   onToggleResources,
   showResources,
+  onExportSnapshot,
   isTourPlaying,
   onToggleTour,
   tourIndex = 0,
@@ -109,6 +111,13 @@ export default function Header({
             }`}
           >
             Missions & STAC
+          </button>
+          <button
+            onClick={onExportSnapshot}
+            className="px-2.5 py-1 text-xs font-medium rounded text-[#8A94A6] hover:text-[#F1F5F9] transition-colors"
+            title="Export high-resolution annotated PNG snapshot"
+          >
+            Export PNG
           </button>
           <button
             onClick={onToggleTour}
