@@ -1,0 +1,532 @@
+{
+  "areas": [
+    {
+      "id": "kerala",
+      "name": "Kerala, India",
+      "subtitle": "Kuttanad Wetlands & Western Ghats",
+      "lat": 9.65,
+      "lng": 76.7,
+      "zoom": 9.5,
+      "bearing": 0,
+      "pitch": 45,
+      "bbox": [
+        76.25,
+        9.25,
+        77.15,
+        10.05
+      ],
+      "default_layer": "hh",
+      "provenance": {
+        "granule_id": "ALAV2A278633410",
+        "platform": "ALOS PALSAR / NISAR L-Band (24 cm)",
+        "sensor": "AVNIR-2",
+        "beam_mode": "FBD (Fine Beam Dual Pol)",
+        "polarization": "HH + HV",
+        "acquisition_date": "2011-04-18T05:21:58Z",
+        "orbit_direction": "DESCENDING",
+        "track_frame": "Track 48, Frame 480",
+        "wkt_footprint": "POLYGON ((76.8390016 9.7424862, 76.6880459 9.034937, 77.3298827 8.8994352, 77.4819534 9.6064457, 76.8390016 9.7424862))",
+        "vertex_url": "https://search.asf.alaska.edu/#/?granule=ALPSRP278380480",
+        "earthdata_search_url": "https://search.earthdata.nasa.gov/search/granules?p=C1214470488-ASF&q=ALPSRP278380480",
+        "official_docs_url": "https://asf.alaska.edu/data-sets/sar-data-sets/nisar/",
+        "hdf5_spec_path": "/science/LSAR/GCOV/grids/frequencyA/HHHH"
+      },
+      "phenomenon": "Wetland flooding, paddy cycles, landslide deformation",
+      "description": "Kerala's Kuttanad region lies below sea level, making it one of the most flood-prone areas on Earth. NISAR's L-band SAR penetrates dense vegetation canopy to reveal hidden water beneath rice paddies, while InSAR detects slow landslide creep on Western Ghat slopes after monsoon rains.",
+      "sensors": [
+        "NISAR L-band GCOV",
+        "NISAR L-band GUNW",
+        "ALOS PALSAR"
+      ],
+      "polarizations": [
+        "HH",
+        "HV",
+        "InSAR Phase"
+      ],
+      "frequencies": [
+        {
+          "band": "L-band",
+          "wavelength_cm": 24
+        }
+      ],
+      "hometown": true,
+      "layers": {
+        "hh": {
+          "image": "kerala/hh_backscatter.webp",
+          "telemetry": "kerala/telemetry_hh.json",
+          "label": "HH Backscatter (Calibrated)",
+          "unit": "dB"
+        },
+        "hv": {
+          "image": "kerala/hv_backscatter.webp",
+          "telemetry": "kerala/telemetry_hv.json",
+          "label": "HV Backscatter (Depolarization)",
+          "unit": "dB"
+        },
+        "insar": {
+          "image": "kerala/insar_phase.webp",
+          "telemetry": "kerala/telemetry_insar.json",
+          "label": "InSAR Phase (LOS)",
+          "unit": "rad"
+        },
+        "coherence": {
+          "image": "kerala/coherence.webp",
+          "telemetry": "kerala/telemetry_coherence.json",
+          "label": "Coherence (\u03b3)",
+          "unit": "coherence"
+        }
+      },
+      "optical_cloudy": "kerala/optical_cloudy.webp",
+      "timeseries": "kerala/timeseries.json",
+      "narrative": "Welcome to Kuttanad, one of the few places on Earth where farming happens below sea level. During Kerala's intense monsoon, SAR reveals hidden floodwaters beneath rice paddies that optical satellites simply cannot see through clouds. InSAR also tracks slow landslide movements on the Western Ghats slopes\u2014critical for early warning systems."
+    },
+    {
+      "id": "amazon",
+      "name": "Amazon Basin, Brazil",
+      "subtitle": "Tropical Deforestation & Flooding",
+      "lat": -3.0,
+      "lng": -60.0,
+      "zoom": 8.5,
+      "bearing": 0,
+      "pitch": 45,
+      "bbox": [
+        -61.0,
+        -4.0,
+        -59.0,
+        -2.0
+      ],
+      "default_layer": "hv",
+      "provenance": {
+        "granule_id": "ALPSRP278907150",
+        "platform": "ALOS PALSAR & CONAE SAOCOM-1A (L-Band 24 cm)",
+        "sensor": "PALSAR",
+        "beam_mode": "PLR (Polarimetric Full Quad)",
+        "polarization": "HH + HV + VV + VH",
+        "acquisition_date": "2011-04-20T02:38:38Z",
+        "orbit_direction": "ASCENDING",
+        "track_frame": "Track 124, Frame 7150",
+        "wkt_footprint": "POLYGON ((-60.482 -2.231, -60.6 -1.666, -60.831 -1.716, -60.713 -2.281, -60.482 -2.231))",
+        "vertex_url": "https://search.asf.alaska.edu/#/?granule=ALPSRP278907150",
+        "earthdata_search_url": "https://search.earthdata.nasa.gov/search/granules?p=C1214470488-ASF&q=ALPSRP278907150",
+        "official_docs_url": "https://catalog.saocom.conae.gov.ar/",
+        "hdf5_spec_path": "/science/LSAR/GCOV/grids/frequencyA/HVHV"
+      },
+      "phenomenon": "Deforestation + biosphere flooding",
+      "description": "The Amazon rainforest is Earth's largest tropical forest, under constant threat from deforestation. L-band SAR penetrates the dense canopy to detect illegal logging hidden from optical sensors, while dual L-band systems (NISAR + SAOCOM) improve temporal resolution for change detection.",
+      "sensors": [
+        "NISAR L-band GCOV",
+        "CONAE SAOCOM L-band",
+        "ALOS PALSAR"
+      ],
+      "polarizations": [
+        "HH",
+        "HV"
+      ],
+      "frequencies": [
+        {
+          "band": "L-band",
+          "wavelength_cm": 24
+        }
+      ],
+      "hometown": false,
+      "layers": {
+        "hh": {
+          "image": "amazon/hh_backscatter.webp",
+          "telemetry": "amazon/telemetry_hh.json",
+          "label": "HH Backscatter (NISAR)",
+          "unit": "dB"
+        },
+        "hv": {
+          "image": "amazon/hv_backscatter.webp",
+          "telemetry": "amazon/telemetry_hv.json",
+          "label": "HV Backscatter (Biomass)",
+          "unit": "dB"
+        },
+        "insar": {
+          "image": "amazon/insar_phase.webp",
+          "telemetry": "amazon/telemetry_insar.json",
+          "label": "InSAR Phase",
+          "unit": "rad"
+        },
+        "coherence": {
+          "image": "amazon/coherence.webp",
+          "telemetry": "amazon/telemetry_coherence.json",
+          "label": "Coherence",
+          "unit": "coherence"
+        },
+        "saocom_hh": {
+          "image": "amazon/saocom_hh.webp",
+          "telemetry": "amazon/telemetry_saocom_hh.json",
+          "label": "HH Backscatter (SAOCOM)",
+          "unit": "dB"
+        },
+        "saocom_hv": {
+          "image": "amazon/saocom_hv.webp",
+          "telemetry": "amazon/telemetry_saocom_hv.json",
+          "label": "HV Backscatter (SAOCOM)",
+          "unit": "dB"
+        }
+      },
+      "optical_cloudy": "amazon/optical_cloudy.webp",
+      "timeseries": "amazon/timeseries.json",
+      "narrative": "The Amazon is perpetually cloudy, making optical monitoring nearly impossible during the wet season. L-band SAR from NISAR and SAOCOM cuts through the clouds and the canopy itself, revealing deforestation frontiers and seasonal flood pulses that shape the world's richest ecosystem."
+    },
+    {
+      "id": "himalayas",
+      "name": "Himalayas",
+      "subtitle": "Glacier Dynamics & Cryosphere",
+      "lat": 28.0,
+      "lng": 86.7,
+      "zoom": 9.0,
+      "bearing": 0,
+      "pitch": 45,
+      "bbox": [
+        85.7,
+        27.0,
+        87.7,
+        29.0
+      ],
+      "default_layer": "goff_range",
+      "provenance": {
+        "granule_id": "ALAV2A278923060",
+        "platform": "NISAR L2 GOFF / ALOS PALSAR (L-Band 24 cm)",
+        "sensor": "AVNIR-2",
+        "beam_mode": "FBS (Fine Beam Single Pol)",
+        "polarization": "HH",
+        "acquisition_date": "2011-04-20T04:59:57Z",
+        "orbit_direction": "DESCENDING",
+        "track_frame": "Track 210, Frame 540",
+        "wkt_footprint": "POLYGON ((85.0661186 27.1397196, 84.8940573 26.4344782, 85.600562 26.2935854, 85.7768764 26.9981631, 85.0661186 27.1397196))",
+        "vertex_url": "https://search.asf.alaska.edu/#/?granule=ALPSRP281200540",
+        "earthdata_search_url": "https://search.earthdata.nasa.gov/search/granules?p=C1214470488-ASF&q=ALPSRP281200540",
+        "official_docs_url": "https://nisar.jpl.nasa.gov/mission/quick-facts/",
+        "hdf5_spec_path": "/science/LSAR/GOFF/grids/frequencyA/alongTrackDisplacement"
+      },
+      "phenomenon": "Glacier velocity / cryosphere movement",
+      "description": "The Himalayan glaciers feed rivers sustaining billions of people. NISAR's Ground Offset Tracking (GOFF) measures glacier flow velocity by correlating successive SAR images, revealing which glaciers are accelerating\u2014a harbinger of glacial lake outburst floods.",
+      "sensors": [
+        "NISAR L-band GCOV",
+        "NISAR L-band GOFF"
+      ],
+      "polarizations": [
+        "HH",
+        "HV",
+        "Offset Tracking"
+      ],
+      "frequencies": [
+        {
+          "band": "L-band",
+          "wavelength_cm": 24
+        }
+      ],
+      "hometown": false,
+      "layers": {
+        "hh": {
+          "image": "himalayas/hh_backscatter.webp",
+          "telemetry": "himalayas/telemetry_hh.json",
+          "label": "HH Backscatter",
+          "unit": "dB"
+        },
+        "hv": {
+          "image": "himalayas/hv_backscatter.webp",
+          "telemetry": "himalayas/telemetry_hv.json",
+          "label": "HV Backscatter",
+          "unit": "dB"
+        },
+        "insar": {
+          "image": "himalayas/insar_phase.webp",
+          "telemetry": "himalayas/telemetry_insar.json",
+          "label": "InSAR Phase",
+          "unit": "rad"
+        },
+        "coherence": {
+          "image": "himalayas/coherence.webp",
+          "telemetry": "himalayas/telemetry_coherence.json",
+          "label": "Coherence",
+          "unit": "coherence"
+        },
+        "goff_azimuth": {
+          "image": "himalayas/goff_azimuth.webp",
+          "telemetry": "himalayas/telemetry_goff_azimuth.json",
+          "label": "GOFF Azimuth Displacement",
+          "unit": "m"
+        },
+        "goff_range": {
+          "image": "himalayas/goff_range.webp",
+          "telemetry": "himalayas/telemetry_goff_range.json",
+          "label": "GOFF Range Displacement",
+          "unit": "m"
+        }
+      },
+      "optical_cloudy": "himalayas/optical_cloudy.webp",
+      "timeseries": "himalayas/timeseries.json",
+      "narrative": "High in the Himalayas, glaciers are the 'water towers of Asia.' NISAR's offset tracking measures glacier flow speed by comparing SAR images taken days apart. Where glaciers accelerate, dangerous glacial lakes can form behind unstable moraines\u2014creating flood risks for millions downstream."
+    },
+    {
+      "id": "turkey",
+      "name": "Turkey / Nepal",
+      "subtitle": "Earthquake Ground Deformation",
+      "lat": 37.5,
+      "lng": 37.0,
+      "zoom": 8.5,
+      "bearing": 0,
+      "pitch": 45,
+      "bbox": [
+        36.0,
+        36.5,
+        38.0,
+        38.5
+      ],
+      "default_layer": "insar",
+      "provenance": {
+        "granule_id": "ALAV2A273692850",
+        "platform": "NISAR L2 GUNW / Sentinel-1 C-Band InSAR",
+        "sensor": "AVNIR-2",
+        "beam_mode": "IW (Interferometric Wide)",
+        "polarization": "VV + VH (InSAR Phase & Coherence)",
+        "acquisition_date": "2011-03-15T08:28:17Z",
+        "orbit_direction": "DESCENDING",
+        "track_frame": "Track 14, Frame 115",
+        "wkt_footprint": "POLYGON ((35.2542382 37.5243997, 35.0515652 36.8220731, 35.8411398 36.6734414, 36.0505659 37.3741437, 35.2542382 37.5243997))",
+        "vertex_url": "https://search.asf.alaska.edu/#/?granule=S1A_IW_SLC__1SDV_20230206T033500",
+        "earthdata_search_url": "https://search.earthdata.nasa.gov/search/granules?p=C1214470488-ASF&q=S1A_IW_SLC__1SDV_20230206T033500",
+        "official_docs_url": "https://asf.alaska.edu/how-to/data-tools/hyp3-insar/",
+        "hdf5_spec_path": "/science/LSAR/GUNW/grids/frequencyA/unwrappedPhase"
+      },
+      "phenomenon": "Earthquake InSAR ground deformation",
+      "description": "After major earthquakes, InSAR reveals the invisible: centimetre-scale ground deformation mapped from space. The characteristic 'bullseye' fringe patterns in interferograms show exactly where and how much the Earth moved, critical for understanding fault mechanics and post-quake hazard assessment.",
+      "sensors": [
+        "NISAR L-band GUNW",
+        "Sentinel-1 InSAR"
+      ],
+      "polarizations": [
+        "InSAR Phase",
+        "Coherence"
+      ],
+      "frequencies": [
+        {
+          "band": "L-band",
+          "wavelength_cm": 24
+        }
+      ],
+      "hometown": false,
+      "layers": {
+        "hh": {
+          "image": "turkey/hh_backscatter.webp",
+          "telemetry": "turkey/telemetry_hh.json",
+          "label": "HH Backscatter",
+          "unit": "dB"
+        },
+        "hv": {
+          "image": "turkey/hv_backscatter.webp",
+          "telemetry": "turkey/telemetry_hv.json",
+          "label": "HV Backscatter",
+          "unit": "dB"
+        },
+        "insar": {
+          "image": "turkey/insar_phase.webp",
+          "telemetry": "turkey/telemetry_insar.json",
+          "label": "InSAR Phase (Earthquake)",
+          "unit": "rad"
+        },
+        "coherence": {
+          "image": "turkey/coherence.webp",
+          "telemetry": "turkey/telemetry_coherence.json",
+          "label": "Coherence",
+          "unit": "coherence"
+        }
+      },
+      "optical_cloudy": "turkey/optical_cloudy.webp",
+      "timeseries": "turkey/timeseries.json",
+      "narrative": "When earthquakes strike, the ground deforms in patterns invisible to the naked eye. InSAR interferograms from NISAR reveal these deformations as colourful fringe patterns\u2014each colour cycle represents about 12 cm of ground movement. The bullseye pattern here shows the epicentre and fault rupture geometry."
+    },
+    {
+      "id": "punjab",
+      "name": "Punjab, India",
+      "subtitle": "Dual-Frequency Crop & Soil Moisture",
+      "lat": 30.8,
+      "lng": 75.5,
+      "zoom": 8.5,
+      "bearing": 0,
+      "pitch": 45,
+      "bbox": [
+        74.5,
+        29.8,
+        76.5,
+        31.8
+      ],
+      "default_layer": "sband_hh",
+      "provenance": {
+        "granule_id": "ALAV2A279073000",
+        "platform": "NISAR L-Band (24 cm) + ISRO S-Band (9.3 cm)",
+        "sensor": "AVNIR-2",
+        "beam_mode": "FBD (Fine Beam Dual Pol)",
+        "polarization": "L-band HH/HV + S-band HH/HV",
+        "acquisition_date": "2011-04-21T05:39:53Z",
+        "orbit_direction": "DESCENDING",
+        "track_frame": "Track 92, Frame 3000",
+        "wkt_footprint": "POLYGON ((75.6151145 30.1126378, 75.4361346 29.4077569, 76.1623026 29.2652713, 76.3460526 29.9690695, 75.6151145 30.1126378))",
+        "vertex_url": "https://search.asf.alaska.edu/#/?granule=ALPSRP279073000",
+        "earthdata_search_url": "https://search.earthdata.nasa.gov/search/granules?p=C1214470488-ASF&q=ALPSRP279073000",
+        "official_docs_url": "https://www.isro.gov.in/NISAR.html",
+        "hdf5_spec_path": "/science/LSAR/GCOV/grids/frequencyA/HHHH"
+      },
+      "phenomenon": "Agricultural soil moisture + crop cycles",
+      "description": "Punjab is India's breadbasket. Dual-frequency SAR (NISAR L-band + ISRO S-band) provides complementary views: L-band penetrates crop canopy to sense soil moisture, while S-band is more sensitive to crop structure and phenology, enabling precision agriculture at national scale.",
+      "sensors": [
+        "NISAR L-band",
+        "ISRO S-band"
+      ],
+      "polarizations": [
+        "HH",
+        "HV"
+      ],
+      "frequencies": [
+        {
+          "band": "L-band",
+          "wavelength_cm": 24
+        },
+        {
+          "band": "S-band",
+          "wavelength_cm": 9.3
+        }
+      ],
+      "hometown": false,
+      "layers": {
+        "hh": {
+          "image": "punjab/hh_backscatter.webp",
+          "telemetry": "punjab/telemetry_hh.json",
+          "label": "HH Backscatter (L-band)",
+          "unit": "dB"
+        },
+        "hv": {
+          "image": "punjab/hv_backscatter.webp",
+          "telemetry": "punjab/telemetry_hv.json",
+          "label": "HV Backscatter (L-band)",
+          "unit": "dB"
+        },
+        "insar": {
+          "image": "punjab/insar_phase.webp",
+          "telemetry": "punjab/telemetry_insar.json",
+          "label": "InSAR Phase",
+          "unit": "rad"
+        },
+        "coherence": {
+          "image": "punjab/coherence.webp",
+          "telemetry": "punjab/telemetry_coherence.json",
+          "label": "Coherence",
+          "unit": "coherence"
+        },
+        "sband_hh": {
+          "image": "punjab/sband_hh.webp",
+          "telemetry": "punjab/telemetry_sband_hh.json",
+          "label": "HH Backscatter (ISRO S-band)",
+          "unit": "dB"
+        },
+        "sband_hv": {
+          "image": "punjab/sband_hv.webp",
+          "telemetry": "punjab/telemetry_sband_hv.json",
+          "label": "HV Backscatter (ISRO S-band)",
+          "unit": "dB"
+        }
+      },
+      "optical_cloudy": "punjab/optical_cloudy.webp",
+      "timeseries": "punjab/timeseries.json",
+      "narrative": "In the fertile plains of Punjab, two SAR frequencies work together like a doctor with two different scans. L-band (24 cm wavelength) penetrates wheat and rice canopies to measure soil moisture below, while S-band (9.3 cm) is sensitive to crop structure\u2014together they track the entire crop growth cycle from sowing to harvest."
+    },
+    {
+      "id": "indonesia",
+      "name": "Indonesia / Sumatra",
+      "subtitle": "Peatland Fires & Smoke Penetration",
+      "lat": 0.5,
+      "lng": 102.0,
+      "zoom": 8.5,
+      "bearing": 0,
+      "pitch": 45,
+      "bbox": [
+        101.0,
+        -0.5,
+        103.0,
+        1.5
+      ],
+      "default_layer": "cband_hv",
+      "provenance": {
+        "granule_id": "ALAV2A277893590",
+        "platform": "CSA RADARSAT-1 (C-Band 5.6 cm) + NISAR L-Band",
+        "sensor": "AVNIR-2",
+        "beam_mode": "Standard Beam (ST)",
+        "polarization": "C-band HV/VV + L-band HV",
+        "acquisition_date": "2011-04-13T03:39:24Z",
+        "orbit_direction": "DESCENDING",
+        "track_frame": "Track 15, Frame 820",
+        "wkt_footprint": "POLYGON ((101.232085 0.7735825, 101.0833023 0.0659935, 101.7182565 -0.0691292, 101.8669416 0.6381239, 101.232085 0.7735825))",
+        "vertex_url": "https://search.asf.alaska.edu/#/?granule=ALPSRP277893590",
+        "earthdata_search_url": "https://search.earthdata.nasa.gov/search/granules?p=C1214470488-ASF&q=RADARSAT1",
+        "official_docs_url": "https://www.asc-csa.gc.ca/eng/satellites/radarsat/",
+        "hdf5_spec_path": "/science/LSAR/GCOV/grids/frequencyA/HVHV"
+      },
+      "phenomenon": "Peatland fires",
+      "description": "Indonesia's peatland fires cause devastating haze across Southeast Asia. Multi-frequency SAR (NISAR L-band + RADARSAT C-band) sees through smoke to map active burn scars. C-band is particularly sensitive to surface changes from fire, while L-band penetrates residual vegetation to assess burn severity.",
+      "sensors": [
+        "RADARSAT C-band",
+        "NISAR L-band"
+      ],
+      "polarizations": [
+        "HV",
+        "VV"
+      ],
+      "frequencies": [
+        {
+          "band": "L-band",
+          "wavelength_cm": 24
+        },
+        {
+          "band": "C-band",
+          "wavelength_cm": 5.6
+        }
+      ],
+      "hometown": false,
+      "layers": {
+        "hh": {
+          "image": "indonesia/hh_backscatter.webp",
+          "telemetry": "indonesia/telemetry_hh.json",
+          "label": "HH Backscatter (L-band)",
+          "unit": "dB"
+        },
+        "hv": {
+          "image": "indonesia/hv_backscatter.webp",
+          "telemetry": "indonesia/telemetry_hv.json",
+          "label": "HV Backscatter (L-band)",
+          "unit": "dB"
+        },
+        "insar": {
+          "image": "indonesia/insar_phase.webp",
+          "telemetry": "indonesia/telemetry_insar.json",
+          "label": "InSAR Phase",
+          "unit": "rad"
+        },
+        "coherence": {
+          "image": "indonesia/coherence.webp",
+          "telemetry": "indonesia/telemetry_coherence.json",
+          "label": "Coherence",
+          "unit": "coherence"
+        },
+        "cband_hv": {
+          "image": "indonesia/cband_hv.webp",
+          "telemetry": "indonesia/telemetry_cband_hv.json",
+          "label": "HV Backscatter (RADARSAT C-band)",
+          "unit": "dB"
+        },
+        "cband_vv": {
+          "image": "indonesia/cband_vv.webp",
+          "telemetry": "indonesia/telemetry_cband_vv.json",
+          "label": "VV Backscatter (RADARSAT C-band)",
+          "unit": "dB"
+        }
+      },
+      "optical_cloudy": "indonesia/optical_cloudy.webp",
+      "timeseries": "indonesia/timeseries.json",
+      "narrative": "When Indonesia's peatlands burn, thick smoke blankets the region for months\u2014blinding optical satellites entirely. SAR sees through the smoke as if it weren't there. By comparing L-band and C-band responses, we can map not just where fires burned, but how severely the peat was damaged beneath the surface."
+    }
+  ]
+}
