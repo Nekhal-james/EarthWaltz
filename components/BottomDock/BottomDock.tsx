@@ -8,16 +8,21 @@ interface BottomDockProps {
   activeLayer: LayerInfo | null;
   timeseriesPath?: string | null;
   onDateChange?: (index: number, dateStr: string) => void;
+  isPlaying?: boolean;
+  onPlayingChange?: (playing: boolean) => void;
 }
 
 export default function BottomDock({
   activeLayer,
   timeseriesPath,
   onDateChange,
+  isPlaying,
+  onPlayingChange,
 }: BottomDockProps) {
   const { data } = useTimeSeries(timeseriesPath || null);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [playing, setPlaying] = useState(false);
+  const [internalPlaying, setInternalPlaying] = useState(false);
+  const playing = isPlaying !== undefined ? isPlaying : internalPlaying;
   const [speed, setSpeed] = useState<number>(1); // 1x, 2x, 4x
 
   const unit = activeLayer?.unit || 'dB';
@@ -92,10 +97,10 @@ export default function BottomDock({
     }
   }, [currentIndex, currentDate, dates, onDateChange]);
 
-  // Animation interval loop
+  // Animation interval loop (1100ms per step at 1x)
   useEffect(() => {
     if (!playing || dates.length === 0) return;
-    const intervalMs = 1200 / speed;
+    const intervalMs = 1100 / speed;
     const timer = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % dates.length);
     }, intervalMs);
@@ -103,8 +108,10 @@ export default function BottomDock({
   }, [playing, dates.length, speed]);
 
   const togglePlay = useCallback(() => {
-    setPlaying((p) => !p);
-  }, []);
+    const next = !playing;
+    setInternalPlaying(next);
+    onPlayingChange?.(next);
+  }, [playing, onPlayingChange]);
 
   const cycleSpeed = () => {
     setSpeed((s) => (s === 1 ? 2 : s === 2 ? 4 : 1));

@@ -35,6 +35,9 @@ export default function HomePage() {
   // Story Mode Split Curtain Position (0 to 100%, default 50%)
   const [storyCurtainPos, setStoryCurtainPos] = useState<number>(50);
 
+  // Shared Timeline Play state across Story Mode & Instrument Mode
+  const [isTimelinePlaying, setIsTimelinePlaying] = useState<boolean>(false);
+
   // Audio Sonification for Story Mode & Workbench
   const { play: playAudio, stop: stopAudio, isPlaying: isSonifying } = useSonification();
   const { data: timeseriesData } = useTimeSeries(activeArea?.timeseries || null);
@@ -115,7 +118,10 @@ export default function HomePage() {
     }
   }, [isSonifying, stopAudio, playAudio, timeseriesData, timelineDateIndex]);
 
-  const activeLayer = activeArea.layers[activeLayerKey] || Object.values(activeArea.layers)[0];
+  const activeLayer =
+    activeArea.layers[activeLayerKey] ||
+    (activeArea.default_layer && activeArea.layers[activeArea.default_layer]) ||
+    Object.values(activeArea.layers)[0];
 
   return (
     <div
@@ -193,6 +199,7 @@ export default function HomePage() {
             onSnapshotExported={handleSnapshotSuccess}
             timelineIndex={timelineDateIndex}
             selectedBand={selectedBand}
+            isTimelinePlaying={isTimelinePlaying}
           />
 
           {/* STORY MODE OVERLAYS: BEFORE/AFTER SPLIT CURTAIN & STATUS STRIP */}
@@ -211,6 +218,8 @@ export default function HomePage() {
                 timeseriesPath={activeArea.timeseries}
                 timelineIndex={timelineDateIndex}
                 onTimelineChange={handleTimelineDateChange}
+                isPlaying={isTimelinePlaying}
+                onPlayingChange={setIsTimelinePlaying}
               />
             </>
           )}
@@ -230,6 +239,8 @@ export default function HomePage() {
                 activeLayer={activeLayer}
                 timeseriesPath={activeArea.timeseries}
                 onDateChange={handleTimelineDateChange}
+                isPlaying={isTimelinePlaying}
+                onPlayingChange={setIsTimelinePlaying}
               />
             </>
           )}

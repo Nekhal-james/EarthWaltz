@@ -18,6 +18,7 @@ interface GlobeWrapperProps {
   onSnapshotExported?: (filename: string) => void;
   timelineIndex?: number;
   selectedBand?: string;
+  isTimelinePlaying?: boolean;
 }
 
 export default function GlobeWrapper(props: GlobeWrapperProps) {

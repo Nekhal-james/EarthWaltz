@@ -206,6 +206,7 @@ interface GlobeProps {
   onSnapshotExported?: (filename: string) => void;
   timelineIndex?: number;
   selectedBand?: string;
+  isTimelinePlaying?: boolean;
 }
 
 export default function Globe({
@@ -221,6 +222,7 @@ export default function Globe({
   onSnapshotExported,
   timelineIndex = 0,
   selectedBand = 'L-Band',
+  isTimelinePlaying = false,
 }: GlobeProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -372,11 +374,26 @@ export default function Globe({
 
       ctx.putImageData(imgData, 0, 0);
       const dataUrl = canvas.toDataURL('image/webp', 0.85);
-      source.updateImage({ url: dataUrl });
+
+      const bbox = activeArea.bbox || [
+        activeArea.lng - 0.45,
+        activeArea.lat - 0.40,
+        activeArea.lng + 0.45,
+        activeArea.lat + 0.40,
+      ];
+      const [west, south, east, north] = bbox;
+      const swathCoords: [[number, number], [number, number], [number, number], [number, number]] = [
+        [west, north],
+        [east, north],
+        [east, south],
+        [west, south],
+      ];
+      source.setCoordinates(swathCoords);
+      source.updateImage({ url: dataUrl, coordinates: swathCoords });
     } catch (err) {
       console.warn('Canvas modulation update error:', err);
     }
-  }, [activeArea.id]);
+  }, [activeArea]);
 
   // Render Ancillary Context Overlays (Human Settlements, Agriculture, Infrastructure)
   const renderAncillaryLayers = useCallback(() => {
@@ -517,7 +534,13 @@ export default function Globe({
     const map = mapRef.current;
     if (!map || !map.isStyleLoaded()) return;
 
-    if (!activeLayer) return;
+    // Never skip rendering if activeLayer hasn't synced yet—always fallback to valid layer in activeArea
+    const layerObj =
+      activeLayer ||
+      (activeArea.default_layer && activeArea.layers[activeArea.default_layer]) ||
+      Object.values(activeArea.layers)[0];
+
+    if (!layerObj) return;
 
     const bbox = activeArea.bbox || [
       activeArea.lng - 0.45,
@@ -534,7 +557,8 @@ export default function Globe({
       [west, south], // Bottom-Left
     ];
 
-    const imagePath = `/data/${activeLayer.image}`;
+    const imagePath = `/data/${layerObj.image}`;
+    const targetOpacity = Math.max(0.85, opacity);
 
     try {
       const existingSource = map.getSource('sar-overlay') as maplibregl.ImageSource | undefined;
@@ -542,7 +566,7 @@ export default function Globe({
         existingSource.setCoordinates(coordinates);
         existingSource.updateImage({ url: imagePath, coordinates: coordinates });
         if (map.getLayer('sar-overlay-layer')) {
-          map.setPaintProperty('sar-overlay-layer', 'raster-opacity', opacity);
+          map.setPaintProperty('sar-overlay-layer', 'raster-opacity', targetOpacity);
         }
       } else {
         map.addSource('sar-overlay', {
@@ -558,7 +582,7 @@ export default function Globe({
             type: 'raster',
             source: 'sar-overlay',
             paint: {
-              'raster-opacity': opacity,
+              'raster-opacity': targetOpacity,
               'raster-fade-duration': 150,
               'raster-resampling': 'linear',
               'raster-contrast': 0.12,
@@ -769,7 +793,78 @@ export default function Globe({
   useEffect(() => {
     renderSarOverlay();
     fitAreaBounds(activeArea);
+
+    const map = mapRef.current;
+    if (map) {
+      map.once('moveend', () => {
+        renderSarOverlay();
+      });
+    }
   }, [activeArea, activeLayer, fitAreaBounds, renderSarOverlay]);
+
+  // 12-step Orbital Waltz Camera Choreography on timeline play
+  useEffect(() => {
+    if (!isTimelinePlaying || timelineIndex === undefined) return;
+    const map = mapRef.current;
+    if (!map || !map.isStyleLoaded()) return;
+
+    const bbox = activeArea.bbox || [
+      activeArea.lng - 0.45,
+      activeArea.lat - 0.40,
+      activeArea.lng + 0.45,
+      activeArea.lat + 0.40,
+    ];
+    const [west, south, east, north] = bbox;
+    const centerLng = (west + east) / 2;
+    const centerLat = (south + north) / 2;
+    const spanLng = east - west;
+    const spanLat = north - south;
+    const baseZoom = activeArea.zoom || 9.5;
+
+    const CHOREOGRAPHY = [
+      // Step 0 (1/12): Wide orbital frame (baseZoom - 0.2, pitch 0°, bearing 0°)
+      { zoomOffset: -0.2, pitch: 0, bearing: 0, dLngFactor: 0, dLatFactor: 0 },
+      // Step 1 (2/12): Zooming in (baseZoom + 0.4, pitch 20°, bearing 4°)
+      { zoomOffset: 0.4, pitch: 20, bearing: 4, dLngFactor: 0.03, dLatFactor: -0.02 },
+      // Step 2 (3/12): Closer inspection (baseZoom + 0.9, pitch 32°, bearing 8°)
+      { zoomOffset: 0.9, pitch: 32, bearing: 8, dLngFactor: 0.06, dLatFactor: 0.04 },
+      // Step 3 (4/12): Zoom out slightly to shift quadrant (baseZoom + 0.3, pitch 18°, bearing -5°)
+      { zoomOffset: 0.3, pitch: 18, bearing: -5, dLngFactor: -0.04, dLatFactor: 0.05 },
+      // Step 4 (5/12): Deep zoom into primary hotspot (baseZoom + 1.25, pitch 40°, bearing -12°)
+      { zoomOffset: 1.25, pitch: 40, bearing: -12, dLngFactor: -0.08, dLatFactor: -0.03 },
+      // Step 5 (6/12): Peak zoom on maximum surface change (baseZoom + 1.55, pitch 45°, bearing -6°)
+      { zoomOffset: 1.55, pitch: 45, bearing: -6, dLngFactor: -0.05, dLatFactor: -0.06 },
+      // Step 6 (7/12): Pull back to mid-altitude (baseZoom + 0.5, pitch 22°, bearing 5°)
+      { zoomOffset: 0.5, pitch: 22, bearing: 5, dLngFactor: 0, dLatFactor: 0 },
+      // Step 7 (8/12): Zoom into secondary hotspot (baseZoom + 1.3, pitch 38°, bearing 14°)
+      { zoomOffset: 1.3, pitch: 38, bearing: 14, dLngFactor: 0.07, dLatFactor: 0.06 },
+      // Step 8 (9/12): Pull back across basin (baseZoom + 0.4, pitch 15°, bearing 6°)
+      { zoomOffset: 0.4, pitch: 15, bearing: 6, dLngFactor: 0.02, dLatFactor: -0.04 },
+      // Step 9 (10/12): Final hotspot close-up (baseZoom + 1.1, pitch 30°, bearing -8°)
+      { zoomOffset: 1.1, pitch: 30, bearing: -8, dLngFactor: -0.05, dLatFactor: 0.03 },
+      // Step 10 (11/12): Zooming out (baseZoom + 0.3, pitch 12°, bearing -3°)
+      { zoomOffset: 0.3, pitch: 12, bearing: -3, dLngFactor: -0.02, dLatFactor: -0.01 },
+      // Step 11 (12/12): Return to full orbital swath overview (baseZoom - 0.1, pitch 0°, bearing 0°)
+      { zoomOffset: -0.1, pitch: 0, bearing: 0, dLngFactor: 0, dLatFactor: 0 },
+    ];
+
+    const stepIdx = (timelineIndex >= 0 ? timelineIndex : 0) % 12;
+    const choreo = CHOREOGRAPHY[stepIdx];
+    const targetZoom = Math.max(7.5, Math.min(13.5, baseZoom + choreo.zoomOffset));
+    const targetCenter: [number, number] = [
+      centerLng + choreo.dLngFactor * spanLng,
+      centerLat + choreo.dLatFactor * spanLat,
+    ];
+
+    map.easeTo({
+      center: targetCenter,
+      zoom: targetZoom,
+      pitch: choreo.pitch,
+      bearing: choreo.bearing,
+      duration: 950,
+      essential: true,
+    });
+  }, [isTimelinePlaying, timelineIndex, activeArea]);
 
   // Update study area map pin markers
   useEffect(() => {

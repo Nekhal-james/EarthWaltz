@@ -11,6 +11,8 @@ interface StoryStatusStripProps {
   timeseriesPath?: string | null;
   timelineIndex: number;
   onTimelineChange: (index: number, dateStr: string) => void;
+  isPlaying?: boolean;
+  onPlayingChange?: (playing: boolean) => void;
 }
 
 export default function StoryStatusStrip({
@@ -20,10 +22,19 @@ export default function StoryStatusStrip({
   timeseriesPath,
   timelineIndex,
   onTimelineChange,
+  isPlaying,
+  onPlayingChange,
 }: StoryStatusStripProps) {
   const { data: tsData } = useTimeSeries(timeseriesPath || null);
   const [telemetry, setTelemetry] = useState<TelemetryData | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [internalPlaying, setInternalPlaying] = useState(false);
+  const playing = isPlaying !== undefined ? isPlaying : internalPlaying;
+
+  const togglePlay = useCallback(() => {
+    const next = !playing;
+    setInternalPlaying(next);
+    onPlayingChange?.(next);
+  }, [playing, onPlayingChange]);
 
   // Load telemetry grid for coordinate value lookup
   useEffect(() => {
@@ -119,16 +130,16 @@ export default function StoryStatusStrip({
     return 'Moderate surface return';
   }, [currentVal, activeLayer]);
 
-  // Timeline playback
+  // Timeline playback (1100ms per step)
   useEffect(() => {
-    if (!isPlaying || !tsData || tsData.dates.length === 0) return;
+    if (!playing || !tsData || tsData.dates.length === 0) return;
     const interval = setInterval(() => {
       const nextIdx = (timelineIndex + 1) % tsData.dates.length;
       onTimelineChange(nextIdx, tsData.dates[nextIdx]);
-    }, 1200);
+    }, 1100);
 
     return () => clearInterval(interval);
-  }, [isPlaying, tsData, timelineIndex, onTimelineChange]);
+  }, [playing, tsData, timelineIndex, onTimelineChange]);
 
   const dates = tsData?.dates || ['2025-01-15'];
   const currentDate = dates[timelineIndex] || dates[0];
@@ -171,11 +182,11 @@ export default function StoryStatusStrip({
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-1">
           <button
-            onClick={() => setIsPlaying((p) => !p)}
+            onClick={togglePlay}
             className="w-5 h-5 rounded flex items-center justify-center bg-[#141613] hover:bg-[#181916] text-[#F4F3EF] border border-[#232520] text-[10px] transition-colors"
-            title={isPlaying ? 'Pause timeline' : 'Play timeline'}
+            title={playing ? 'Pause timeline' : 'Play timeline'}
           >
-            {isPlaying ? '⏸' : '▶'}
+            {playing ? '⏸' : '▶'}
           </button>
 
           <button
