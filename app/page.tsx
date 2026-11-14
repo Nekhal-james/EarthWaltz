@@ -7,12 +7,12 @@ import { useSonification } from '@/hooks/useSonification';
 import { useTimeSeries } from '@/hooks/useTimeSeries';
 import type { StudyArea, BasemapStyle, AppMode } from '@/types';
 
+import Header from '@/components/Header/Header';
 import StoryJournal from '@/components/StoryMode/StoryJournal';
 import StorySplitCurtain from '@/components/StoryMode/StorySplitCurtain';
 import StoryStatusStrip from '@/components/StoryMode/StoryStatusStrip';
 
 const GlobeWrapper = dynamic(() => import('@/components/Globe/GlobeWrapper'), { ssr: false });
-const Header = dynamic(() => import('@/components/Header/Header'), { ssr: false });
 const InspectorSidebar = dynamic(() => import('@/components/InspectorSidebar/InspectorSidebar'), { ssr: false });
 const BottomDock = dynamic(() => import('@/components/BottomDock/BottomDock'), { ssr: false });
 const CursorHUD = dynamic(() => import('@/components/CursorHUD/CursorHUD'), { ssr: false });
@@ -117,19 +117,11 @@ export default function HomePage() {
 
   const activeLayer = activeArea.layers[activeLayerKey] || Object.values(activeArea.layers)[0];
 
-  if (loading) {
-    return (
-      <div className="h-screen w-screen flex items-center justify-center bg-[#0D0E0C]">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-[#232520] border-t-[#E54D2E] rounded-full animate-spin" />
-          <p className="text-xs text-[#9A9B94] font-mono">Initializing EarthWaltz Observatory...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="h-screen w-screen flex flex-col bg-[#0D0E0C] text-[#F4F3EF] overflow-hidden select-none font-sans">
+    <div
+      style={{ backgroundColor: '#0D0E0C', color: '#F4F3EF', minHeight: '100vh', width: '100vw' }}
+      className="h-screen w-screen flex flex-col bg-[#0D0E0C] text-[#F4F3EF] overflow-hidden select-none font-sans"
+    >
       {/* GLOBAL COMMAND BAR WITH MODE SWITCHER */}
       <Header
         mode={mode}

@@ -30,8 +30,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${newsreader.variable} ${jetbrainsMono.variable}`}>
-      <body className="bg-[#0D0E0C] text-[#F4F3EF] font-[family-name:var(--font-sans)] antialiased selection:bg-[#E54D2E]/30 selection:text-[#F4F3EF]">
+    <html lang="en" className={`${inter.variable} ${newsreader.variable} ${jetbrainsMono.variable}`} style={{ backgroundColor: '#0D0E0C', color: '#F4F3EF' }}>
+      <body
+        style={{ backgroundColor: '#0D0E0C', color: '#F4F3EF', minHeight: '100vh', margin: 0 }}
+        className="bg-[#0D0E0C] text-[#F4F3EF] font-[family-name:var(--font-sans)] antialiased selection:bg-[#E54D2E]/30 selection:text-[#F4F3EF]"
+      >
         {children}
       </body>
     </html>

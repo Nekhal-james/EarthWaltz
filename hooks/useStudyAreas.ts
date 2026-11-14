@@ -184,7 +184,7 @@ const FALLBACK_AREAS: StudyArea[] = [
 export function useStudyAreas() {
   const [areas, setAreas] = useState<StudyArea[]>(FALLBACK_AREAS);
   const [activeArea, setActiveArea] = useState<StudyArea>(FALLBACK_AREAS[0]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
