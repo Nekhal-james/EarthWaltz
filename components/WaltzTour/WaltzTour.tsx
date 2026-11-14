@@ -48,9 +48,6 @@ export default function WaltzTour({ areas, onFlyTo }: WaltzTourProps) {
   const handleStart = () => {
     setIsPlaying(true);
     setCurrentIndex(0);
-    if (tourAreas[0]) {
-      onFlyToRef.current?.(tourAreas[0]);
-    }
   };
 
   const handleStop = () => {

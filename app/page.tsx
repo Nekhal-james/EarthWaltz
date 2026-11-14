@@ -25,6 +25,7 @@ export default function HomePage() {
   // Timeline state synced with BottomDock and CursorHUD
   const [timelineDate, setTimelineDate] = useState<string>('');
   const [timelineDateIndex, setTimelineDateIndex] = useState<number>(0);
+  const [selectedBand, setSelectedBand] = useState<string>('L-Band');
 
   const handleTimelineDateChange = useCallback((idx: number, d: string) => {
     setTimelineDateIndex(idx);
@@ -75,13 +76,8 @@ export default function HomePage() {
   }, [tourIndex, isTourPlaying, areas, handleAreaChange]);
 
   const handleToggleTour = useCallback(() => {
-    setIsTourPlaying((prev) => {
-      const next = !prev;
-      if (next) {
-        setTourIndex(0);
-      }
-      return next;
-    });
+    setIsTourPlaying((prev) => !prev);
+    setTourIndex(0);
   }, []);
 
   const handleSnapshotSuccess = useCallback((filename: string) => {
@@ -133,6 +129,8 @@ export default function HomePage() {
           area={activeArea}
           activeLayerKey={activeLayerKey}
           onSelectLayer={setActiveLayerKey}
+          selectedBand={selectedBand}
+          onSelectBand={setSelectedBand}
           ancillaryVisible={ancillaryVisible}
           onToggleAncillary={(layerId) =>
             setAncillaryVisible((prev) =>
@@ -155,6 +153,7 @@ export default function HomePage() {
             captureTrigger={captureTrigger}
             onSnapshotExported={handleSnapshotSuccess}
             timelineIndex={timelineDateIndex}
+            selectedBand={selectedBand}
           />
 
           {/* ZONE 4: COMPACT CURSOR HUD (Top-Right of Map) */}

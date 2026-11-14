@@ -4,6 +4,7 @@ import { useRef, useEffect, useCallback } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { StudyArea, LayerInfo, BasemapStyle } from '@/types';
+import { ANCILLARY_DATA_BY_AREA } from './AncillaryData';
 
 // Esri World Imagery + Esri Reference Boundaries (Zero watermark, zero API key required)
 const ESRI_SATELLITE_STYLE: maplibregl.StyleSpecification = {
@@ -204,6 +205,7 @@ interface GlobeProps {
   captureTrigger?: number;
   onSnapshotExported?: (filename: string) => void;
   timelineIndex?: number;
+  selectedBand?: string;
 }
 
 export default function Globe({
@@ -218,6 +220,7 @@ export default function Globe({
   captureTrigger = 0,
   onSnapshotExported,
   timelineIndex = 0,
+  selectedBand = 'L-Band',
 }: GlobeProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -228,16 +231,16 @@ export default function Globe({
   const baseImageRef = useRef<HTMLImageElement | null>(null);
   const offscreenCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  // Viewport alignment: Fit bounds smoothly with left inspector sidebar padding
+  // Viewport alignment: Fit bounds tightly around ~90km x 90km swath (zoom level 9.0 - 10.5)
   const fitAreaBounds = useCallback((area: StudyArea, duration = 1400) => {
     const map = mapRef.current;
     if (!map) return;
 
     const bbox = area.bbox || [
-      area.lng - 0.5,
-      area.lat - 0.5,
-      area.lng + 0.5,
-      area.lat + 0.5,
+      area.lng - 0.45,
+      area.lat - 0.40,
+      area.lng + 0.45,
+      area.lat + 0.40,
     ];
     const [west, south, east, north] = bbox;
 
@@ -251,12 +254,13 @@ export default function Globe({
         duration: duration,
         essential: true,
         maxZoom: 11,
+        minZoom: 8.8,
       }
     );
   }, []);
 
-  // Modulate SAR raster pixel data on timeline step changes and update map texture
-  const updateModulatedRaster = useCallback((stepIndex: number) => {
+  // Modulate SAR raster pixel data on timeline step or frequency band changes
+  const updateModulatedRaster = useCallback((stepIndex: number, band: string) => {
     const map = mapRef.current;
     const img = baseImageRef.current;
     if (!map || !map.isStyleLoaded() || !img) return;
@@ -311,7 +315,7 @@ export default function Globe({
           }
         }
       } else if (areaId === 'turkey' || areaId === 'turkey_earthquake') {
-        // InSAR fringe phase rotation along the fault line
+        // InSAR fringe phase rotation along the East Anatolian Fault line
         const phaseShift = ((stepIndex % 12) / 12) * Math.PI * 2;
         const sinP = Math.sin(phaseShift);
         const cosP = Math.cos(phaseShift);
@@ -350,6 +354,22 @@ export default function Globe({
         }
       }
 
+      // Frequency Wavelength Scattering adjustments:
+      // S-band (9.3cm) and C-band (5.6cm) have shorter wavelengths -> higher surface roughness response
+      if (band === 'S-Band') {
+        for (let i = 0; i < data.length; i += 4) {
+          if (data[i + 3] === 0) continue;
+          data[i] = Math.min(255, Math.round(data[i] * 1.08));
+          data[i + 1] = Math.min(255, Math.round(data[i + 1] * 1.04));
+        }
+      } else if (band === 'C-Band') {
+        for (let i = 0; i < data.length; i += 4) {
+          if (data[i + 3] === 0) continue;
+          data[i + 1] = Math.min(255, Math.round(data[i + 1] * 1.10));
+          data[i + 2] = Math.min(255, Math.round(data[i + 2] * 1.14));
+        }
+      }
+
       ctx.putImageData(imgData, 0, 0);
       const dataUrl = canvas.toDataURL('image/webp', 0.85);
       source.updateImage({ url: dataUrl });
@@ -357,6 +377,140 @@ export default function Globe({
       console.warn('Canvas modulation update error:', err);
     }
   }, [activeArea.id]);
+
+  // Render Ancillary Context Overlays (Human Settlements, Agriculture, Infrastructure)
+  const renderAncillaryLayers = useCallback(() => {
+    const map = mapRef.current;
+    if (!map || !map.isStyleLoaded()) return;
+
+    const data = ANCILLARY_DATA_BY_AREA[activeArea.id] || ANCILLARY_DATA_BY_AREA.kerala;
+
+    // 1. Agriculture Fill & Line
+    if (map.getSource('ancillary-agriculture-src')) {
+      (map.getSource('ancillary-agriculture-src') as maplibregl.GeoJSONSource).setData(data.agriculture);
+    } else {
+      map.addSource('ancillary-agriculture-src', {
+        type: 'geojson',
+        data: data.agriculture,
+      });
+      map.addLayer({
+        id: 'ancillary-agriculture-fill',
+        type: 'fill',
+        source: 'ancillary-agriculture-src',
+        layout: {
+          visibility: ancillaryVisible.includes('agriculture') ? 'visible' : 'none',
+        },
+        paint: {
+          'fill-color': '#10B981',
+          'fill-opacity': 0.22,
+        },
+      });
+      map.addLayer({
+        id: 'ancillary-agriculture-line',
+        type: 'line',
+        source: 'ancillary-agriculture-src',
+        layout: {
+          visibility: ancillaryVisible.includes('agriculture') ? 'visible' : 'none',
+        },
+        paint: {
+          'line-color': '#10B981',
+          'line-width': 1.8,
+          'line-dasharray': [3, 2],
+        },
+      });
+    }
+
+    // 2. Infrastructure Corridor Lines
+    if (map.getSource('ancillary-infrastructure-src')) {
+      (map.getSource('ancillary-infrastructure-src') as maplibregl.GeoJSONSource).setData(data.infrastructure);
+    } else {
+      map.addSource('ancillary-infrastructure-src', {
+        type: 'geojson',
+        data: data.infrastructure,
+      });
+      map.addLayer({
+        id: 'ancillary-infrastructure-casing',
+        type: 'line',
+        source: 'ancillary-infrastructure-src',
+        layout: {
+          visibility: ancillaryVisible.includes('infrastructure') ? 'visible' : 'none',
+        },
+        paint: {
+          'line-color': '#090A0F',
+          'line-width': 4.5,
+          'line-opacity': 0.85,
+        },
+      });
+      map.addLayer({
+        id: 'ancillary-infrastructure-line',
+        type: 'line',
+        source: 'ancillary-infrastructure-src',
+        layout: {
+          visibility: ancillaryVisible.includes('infrastructure') ? 'visible' : 'none',
+        },
+        paint: {
+          'line-color': '#06B6D4',
+          'line-width': 2.5,
+          'line-opacity': 0.95,
+        },
+      });
+    }
+
+    // 3. Human Settlements (Glowing Circles & Labels)
+    if (map.getSource('ancillary-population-src')) {
+      (map.getSource('ancillary-population-src') as maplibregl.GeoJSONSource).setData(data.population);
+    } else {
+      map.addSource('ancillary-population-src', {
+        type: 'geojson',
+        data: data.population,
+      });
+      map.addLayer({
+        id: 'ancillary-population-halo',
+        type: 'circle',
+        source: 'ancillary-population-src',
+        layout: {
+          visibility: ancillaryVisible.includes('population') ? 'visible' : 'none',
+        },
+        paint: {
+          'circle-radius': 9,
+          'circle-color': '#F59E0B',
+          'circle-opacity': 0.35,
+        },
+      });
+      map.addLayer({
+        id: 'ancillary-population-circles',
+        type: 'circle',
+        source: 'ancillary-population-src',
+        layout: {
+          visibility: ancillaryVisible.includes('population') ? 'visible' : 'none',
+        },
+        paint: {
+          'circle-radius': 4.5,
+          'circle-color': '#EF4444',
+          'circle-stroke-width': 1.5,
+          'circle-stroke-color': '#F1F5F9',
+        },
+      });
+      map.addLayer({
+        id: 'ancillary-population-labels',
+        type: 'symbol',
+        source: 'ancillary-population-src',
+        layout: {
+          visibility: ancillaryVisible.includes('population') ? 'visible' : 'none',
+          'text-field': ['get', 'name'],
+          'text-size': 11,
+          'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'],
+          'text-offset': [0, 1.2],
+          'text-anchor': 'top',
+        },
+        paint: {
+          'text-color': '#F1F5F9',
+          'text-halo-color': '#090A0F',
+          'text-halo-width': 2,
+        },
+      });
+    }
+  }, [activeArea.id, ancillaryVisible]);
 
   // Render native MapLibre image raster (organic, zero bounding-box border)
   const renderSarOverlay = useCallback(() => {
@@ -369,10 +523,10 @@ export default function Globe({
     if (!activeLayer) return;
 
     const bbox = activeArea.bbox || [
-      activeArea.lng - 0.5,
-      activeArea.lat - 0.5,
-      activeArea.lng + 0.5,
-      activeArea.lat + 0.5,
+      activeArea.lng - 0.45,
+      activeArea.lat - 0.40,
+      activeArea.lng + 0.45,
+      activeArea.lat + 0.40,
     ];
     const [west, south, east, north] = bbox;
 
@@ -392,15 +546,19 @@ export default function Globe({
         coordinates: coordinates,
       });
 
-      map.addLayer({
-        id: 'sar-overlay-layer',
-        type: 'raster',
-        source: 'sar-overlay',
-        paint: {
-          'raster-opacity': opacity,
-          'raster-fade-duration': 200,
+      // Insert raster layer before ancillary layers so context overlays render cleanly on top
+      map.addLayer(
+        {
+          id: 'sar-overlay-layer',
+          type: 'raster',
+          source: 'sar-overlay',
+          paint: {
+            'raster-opacity': opacity,
+            'raster-fade-duration': 200,
+          },
         },
-      });
+        map.getLayer('ancillary-agriculture-fill') ? 'ancillary-agriculture-fill' : undefined
+      );
 
       // Cache base image for smooth timeline modulation
       const img = new Image();
@@ -408,21 +566,40 @@ export default function Globe({
       img.src = imagePath;
       img.onload = () => {
         baseImageRef.current = img;
-        if (timelineIndex > 0) {
-          updateModulatedRaster(timelineIndex);
-        }
+        updateModulatedRaster(timelineIndex, selectedBand);
       };
+
+      // Ensure ancillary context layers are active and rendered on top
+      renderAncillaryLayers();
     } catch (err) {
       console.warn('MapLibre overlay render warning:', err);
     }
-  }, [activeArea, activeLayer, opacity, timelineIndex, updateModulatedRaster]);
+  }, [activeArea, activeLayer, opacity, timelineIndex, selectedBand, updateModulatedRaster, renderAncillaryLayers]);
 
-  // Update modulated raster when timeline index changes
+  // Update modulated raster when timeline index or frequency band changes
   useEffect(() => {
     if (baseImageRef.current) {
-      updateModulatedRaster(timelineIndex);
+      updateModulatedRaster(timelineIndex, selectedBand);
     }
-  }, [timelineIndex, updateModulatedRaster]);
+  }, [timelineIndex, selectedBand, updateModulatedRaster]);
+
+  // React to ancillary layer visibility toggles
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !map.isStyleLoaded()) return;
+
+    const agVis = ancillaryVisible.includes('agriculture') ? 'visible' : 'none';
+    const infVis = ancillaryVisible.includes('infrastructure') ? 'visible' : 'none';
+    const popVis = ancillaryVisible.includes('population') ? 'visible' : 'none';
+
+    if (map.getLayer('ancillary-agriculture-fill')) map.setLayoutProperty('ancillary-agriculture-fill', 'visibility', agVis);
+    if (map.getLayer('ancillary-agriculture-line')) map.setLayoutProperty('ancillary-agriculture-line', 'visibility', agVis);
+    if (map.getLayer('ancillary-infrastructure-casing')) map.setLayoutProperty('ancillary-infrastructure-casing', 'visibility', infVis);
+    if (map.getLayer('ancillary-infrastructure-line')) map.setLayoutProperty('ancillary-infrastructure-line', 'visibility', infVis);
+    if (map.getLayer('ancillary-population-halo')) map.setLayoutProperty('ancillary-population-halo', 'visibility', popVis);
+    if (map.getLayer('ancillary-population-circles')) map.setLayoutProperty('ancillary-population-circles', 'visibility', popVis);
+    if (map.getLayer('ancillary-population-labels')) map.setLayoutProperty('ancillary-population-labels', 'visibility', popVis);
+  }, [ancillaryVisible]);
 
   // Export high-resolution annotated snapshot
   const exportSnapshot = useCallback(() => {
@@ -436,10 +613,8 @@ export default function Globe({
     const ctx = exportCanvas.getContext('2d');
     if (!ctx) return;
 
-    // Draw map view
     ctx.drawImage(mapCanvas, 0, 0);
 
-    // Overlay instrument telemetry watermark banner
     const pad = 24;
     ctx.fillStyle = 'rgba(9, 10, 15, 0.90)';
     ctx.strokeStyle = '#222736';
@@ -453,12 +628,10 @@ export default function Globe({
     ctx.fillRect(bannerX, bannerY, bannerW, bannerH);
     ctx.strokeRect(bannerX, bannerY, bannerW, bannerH);
 
-    // Header text
     ctx.fillStyle = '#F59E0B';
     ctx.font = 'bold 12px Inter, sans-serif';
     ctx.fillText('EARTHWALTZ OBSERVATORY · NASA SPACE APPS 2026', bannerX + 14, bannerY + 24);
 
-    // Study Area & Phenomenon
     ctx.fillStyle = '#F1F5F9';
     ctx.font = 'bold 14px Inter, sans-serif';
     ctx.fillText(activeArea.name, bannerX + 14, bannerY + 46);
@@ -466,12 +639,11 @@ export default function Globe({
     ctx.fillStyle = '#8A94A6';
     ctx.font = '11px Inter, sans-serif';
     ctx.fillText(
-      `${activeArea.phenomenon} · Layer: ${activeLayer?.label || 'SAR'} (${activeLayer?.unit || 'dB'})`,
+      `${activeArea.phenomenon} · Layer: ${activeLayer?.label || 'SAR'} (${activeLayer?.unit || 'dB'}) [${selectedBand}]`,
       bannerX + 14,
       bannerY + 66
     );
 
-    // Sensor Provenance
     ctx.fillStyle = '#8A94A6';
     ctx.font = '9px monospace';
     ctx.fillText(
@@ -487,7 +659,7 @@ export default function Globe({
     link.click();
 
     onSnapshotExported?.(filename);
-  }, [activeArea, activeLayer, onSnapshotExported]);
+  }, [activeArea, activeLayer, selectedBand, onSnapshotExported]);
 
   // Trigger snapshot export from props
   useEffect(() => {
@@ -501,10 +673,10 @@ export default function Globe({
     if (!containerRef.current) return;
 
     const initialBbox = activeArea.bbox || [
-      activeArea.lng - 0.5,
-      activeArea.lat - 0.5,
-      activeArea.lng + 0.5,
-      activeArea.lat + 0.5,
+      activeArea.lng - 0.45,
+      activeArea.lat - 0.40,
+      activeArea.lng + 0.45,
+      activeArea.lat + 0.40,
     ];
 
     const map = new maplibregl.Map({
@@ -518,10 +690,11 @@ export default function Globe({
         padding: { top: 80, bottom: 120, left: 380, right: 60 },
         duration: 0,
         maxZoom: 11,
+        minZoom: 8.8,
       },
       attributionControl: false,
       renderWorldCopies: false,
-      preserveDrawingBuffer: true, // Enables high-res canvas exports
+      preserveDrawingBuffer: true,
     });
 
     map.addControl(new maplibregl.NavigationControl({ showCompass: true }), 'bottom-right');
@@ -530,7 +703,6 @@ export default function Globe({
       'bottom-right'
     );
 
-    // Track cursor coordinates
     map.on('mousemove', (e) => {
       onCursorMove?.({ lat: e.lngLat.lat, lng: e.lngLat.lng });
     });
@@ -555,7 +727,7 @@ export default function Globe({
       mapRef.current = null;
       isLoadedRef.current = false;
     };
-  }, []); // Run once on mount
+  }, []);
 
   // React to basemap style switch
   useEffect(() => {

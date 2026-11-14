@@ -29,3 +29,8 @@ next-env.d.ts
 # GeoTIFFs (large files)
 *.tif
 *.tiff
+
+# Python
+__pycache__/
+*.pyc
+data-pipeline/cache/

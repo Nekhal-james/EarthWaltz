@@ -5,18 +5,36 @@ import type { StudyArea } from '@/types';
 import { useSonification } from '@/hooks/useSonification';
 import { useTimeSeries } from '@/hooks/useTimeSeries';
 
-interface InspectorSidebarProps {
-  area: StudyArea;
-  activeLayerKey: string;
-  onSelectLayer: (key: string) => void;
-  ancillaryVisible: string[];
-  onToggleAncillary: (layerId: string) => void;
+interface BandSpec {
+  wavelength: string;
+  frequency: string;
+  depth: string;
+  scatterers: string;
+  note: string;
 }
 
-const FREQUENCY_NOTES: Record<string, string> = {
-  'L-Band': 'Penetrates dense forest canopy and deep soil layers to map ground deformation and standing water.',
-  'S-Band': 'Penetrates light foliage; highly sensitive to crop morphology, paddy growth stages, and surface roughness.',
-  'C-Band': 'Scatters off upper canopy crowns and rough surfaces; ideal for burn scar detection and all-weather flood mapping.',
+const BAND_SPECS: Record<string, BandSpec> = {
+  'L-Band': {
+    wavelength: '24.0 cm',
+    frequency: '1.25 GHz',
+    depth: '~1.5 m (Soil & Full Forest Canopy)',
+    scatterers: 'Trunks, soil moisture, sub-canopy standing water',
+    note: 'Deepest penetration. Penetrates dense forest canopy and deep soil layers to map ground deformation and hidden standing water.',
+  },
+  'S-Band': {
+    wavelength: '9.3 cm',
+    frequency: '3.20 GHz',
+    depth: '~30 cm (Crop Foliage & Upper Canopy)',
+    scatterers: 'Crop stalks, leaf clusters, paddy morphology',
+    note: 'Moderate penetration. Highly sensitive to crop morphology, paddy growth stages, leaf water content, and surface roughness.',
+  },
+  'C-Band': {
+    wavelength: '5.6 cm',
+    frequency: '5.40 GHz',
+    depth: '~5 cm (Top of Canopy & Rough Surface)',
+    scatterers: 'Canopy crowns, rough soil, burn scars, surface ripples',
+    note: 'Surface scatterer. Scatters off upper canopy crowns and rough surfaces; ideal for burn scar detection and all-weather flood mapping.',
+  },
 };
 
 const ANCILLARY_LAYERS = [
@@ -25,15 +43,28 @@ const ANCILLARY_LAYERS = [
   { id: 'infrastructure', label: 'Infrastructure (Roads & Transport Corridors)' },
 ];
 
+interface InspectorSidebarProps {
+  area: StudyArea;
+  activeLayerKey: string;
+  onSelectLayer: (key: string) => void;
+  ancillaryVisible: string[];
+  onToggleAncillary: (layerId: string) => void;
+  selectedBand?: string;
+  onSelectBand?: (band: string) => void;
+}
+
 export default function InspectorSidebar({
   area,
   activeLayerKey,
   onSelectLayer,
   ancillaryVisible,
   onToggleAncillary,
+  selectedBand: propBand,
+  onSelectBand,
 }: InspectorSidebarProps) {
   // Determine selected frequency tab (defaults to L-Band 24cm)
-  const [selectedBand, setSelectedBand] = useState<string>('L-Band');
+  const [localBand, setLocalBand] = useState<string>('L-Band');
+  const selectedBand = propBand || localBand;
 
   // Sonification controls
   const { data: timeseriesData } = useTimeSeries(area.timeseries);
@@ -44,10 +75,12 @@ export default function InspectorSidebar({
 
   // Sync selected frequency when changing study area
   useEffect(() => {
-    if (activeLayerKey.startsWith('sband')) setSelectedBand('S-Band');
-    else if (activeLayerKey.startsWith('cband')) setSelectedBand('C-Band');
-    else setSelectedBand('L-Band');
-  }, [activeLayerKey, area.id]);
+    let band = 'L-Band';
+    if (activeLayerKey.startsWith('sband')) band = 'S-Band';
+    else if (activeLayerKey.startsWith('cband')) band = 'C-Band';
+    setLocalBand(band);
+    onSelectBand?.(band);
+  }, [activeLayerKey, area.id, onSelectBand]);
 
   // Sonification timer step
   useEffect(() => {
@@ -136,13 +169,16 @@ export default function InspectorSidebar({
   const bands = area.frequencies.map((f) => f.band);
 
   const handleFrequencySelect = (band: string) => {
-    setSelectedBand(band);
+    setLocalBand(band);
+    onSelectBand?.(band);
     if (band === 'S-Band') {
       const sKey = layerKeys.find((k) => k.startsWith('sband'));
       if (sKey) onSelectLayer(sKey);
+      else onSelectLayer('hh');
     } else if (band === 'C-Band') {
       const cKey = layerKeys.find((k) => k.startsWith('cband'));
       if (cKey) onSelectLayer(cKey);
+      else onSelectLayer('hv');
     } else {
       const lKey = layerKeys.find((k) => !k.startsWith('sband') && !k.startsWith('cband')) || 'hh';
       onSelectLayer(lKey);
@@ -217,22 +253,18 @@ export default function InspectorSidebar({
           <span className="text-[10px] font-mono tracking-widest text-[#8A94A6] uppercase">
             Radar Frequency Band
           </span>
-          {/* Frequency Tabs */}
+          {/* Frequency Tabs (All 3 Bands Clickable & Highly Distinct) */}
           <div className="grid grid-cols-3 gap-1 bg-[#12151E] border border-[#222736] rounded p-0.5 mt-1.5">
             {['L-Band', 'S-Band', 'C-Band'].map((band) => {
-              const isAvailable = bands.some((b) => b.toLowerCase().includes(band.toLowerCase()));
               const isSelected = selectedBand === band;
               return (
                 <button
                   key={band}
                   onClick={() => handleFrequencySelect(band)}
-                  disabled={!isAvailable}
                   className={`py-1 text-[11px] font-medium rounded transition-colors text-center ${
                     isSelected
-                      ? 'bg-[#222736] text-[#F59E0B]'
-                      : isAvailable
-                      ? 'text-[#8A94A6] hover:text-[#F1F5F9]'
-                      : 'text-[#8A94A6]/30 cursor-not-allowed'
+                      ? 'bg-[#222736] text-[#F59E0B] border border-[#F59E0B]/30'
+                      : 'text-[#8A94A6] hover:text-[#F1F5F9] hover:bg-[#12151E]'
                   }`}
                 >
                   {band}
@@ -241,10 +273,22 @@ export default function InspectorSidebar({
             })}
           </div>
 
-          {/* Plain-English Penetration Note */}
-          <p className="text-[11px] text-[#8A94A6] leading-snug mt-2 italic">
-            {FREQUENCY_NOTES[selectedBand] || FREQUENCY_NOTES['L-Band']}
-          </p>
+          {/* Dynamic Frequency Physics & Penetration Depth Spec */}
+          {BAND_SPECS[selectedBand] && (
+            <div className="bg-[#12151E] border border-[#222736] rounded p-2.5 flex flex-col gap-1.5 mt-2">
+              <div className="flex items-center justify-between font-mono text-[11px]">
+                <span className="text-[#8A94A6]">Wavelength (λ):</span>
+                <span className="text-[#F59E0B] font-semibold">{BAND_SPECS[selectedBand].wavelength} ({BAND_SPECS[selectedBand].frequency})</span>
+              </div>
+              <div className="flex items-center justify-between font-mono text-[10px]">
+                <span className="text-[#8A94A6]">Penetration:</span>
+                <span className="text-[#F1F5F9]">{BAND_SPECS[selectedBand].depth}</span>
+              </div>
+              <p className="text-[10px] text-[#8A94A6] leading-snug pt-1.5 border-t border-[#222736]">
+                {BAND_SPECS[selectedBand].note}
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Radio-style List for Polarization Channels */}
