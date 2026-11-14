@@ -15,6 +15,10 @@ interface StoryJournalProps {
   onToggleSonification: () => void;
   isPlayingTimeline?: boolean;
   onToggleTimeline?: () => void;
+  selectedBand?: string;
+  onSelectBand?: (band: string) => void;
+  ancillaryVisible?: string[];
+  onToggleAncillary?: (layerId: string) => void;
 }
 
 interface ChapterSummary {
@@ -116,6 +120,10 @@ export default function StoryJournal({
   onToggleSonification,
   isPlayingTimeline = false,
   onToggleTimeline,
+  selectedBand = 'L-Band',
+  onSelectBand,
+  ancillaryVisible = [],
+  onToggleAncillary,
 }: StoryJournalProps) {
   const current = CHAPTER_SUMMARIES[activeArea.id] || CHAPTER_SUMMARIES.kerala;
 
@@ -143,15 +151,10 @@ export default function StoryJournal({
     <aside className="w-[420px] h-full flex flex-col bg-[#FFFFFF] border-r border-[#E2E8F0] select-text z-20 overflow-y-auto font-sans shadow-sm">
       {/* 1. TOP HEADER & REGION PICKER (Clean 2x3 Grid) */}
       <div className="p-5 border-b border-[#E2E8F0] shrink-0 bg-[#FFFFFF]">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#2563EB]" />
-            <span className="text-[11px] font-semibold tracking-wider text-[#64748B] uppercase">
-              NASA · ISRO Observatory
-            </span>
-          </div>
-          <span className="text-[11px] font-medium text-[#2563EB] bg-[#2563EB]/10 px-2 py-0.5 rounded-full">
-            Story Mode
+        <div className="flex items-center gap-2 mb-2">
+          <span className="w-2 h-2 rounded-full bg-[#2563EB]" />
+          <span className="text-[11px] font-semibold tracking-wider text-[#64748B] uppercase">
+            NASA · ISRO Observatory
           </span>
         </div>
 
@@ -275,7 +278,7 @@ export default function StoryJournal({
             <div
               className="h-2.5 w-full rounded-full border border-black/10"
               style={{
-                background: 'linear-gradient(to right, #0F172A 0%, #06B6D4 45%, #F59E0B 80%, #FEF08A 100%)',
+                background: 'linear-gradient(to right, #0284C7 0%, #38BDF8 30%, #1E293B 55%, #F59E0B 80%, #FEF08A 100%)',
               }}
             />
           )}
@@ -284,7 +287,7 @@ export default function StoryJournal({
             <div
               className="h-2.5 w-full rounded-full border border-black/10"
               style={{
-                background: 'linear-gradient(to right, #0D1B1E 0%, #1B4332 35%, #2D6A4F 65%, #D9ED92 100%)',
+                background: 'linear-gradient(to right, #F43F5E 0%, #FB923C 35%, #347357 65%, #10B981 100%)',
               }}
             />
           )}
@@ -303,14 +306,14 @@ export default function StoryJournal({
           <div className="flex items-center justify-between text-[10px] text-[#64748B]">
             {isHH ? (
               <>
-                <span>-24 dB · Specular Water</span>
-                <span>-12 dB · Soil/Plains</span>
-                <span>+2 dB · Double-Bounce</span>
+                <span>-24 dB · Water</span>
+                <span>-12 dB · Dry Land (Clear)</span>
+                <span>+2 dB · Flooded Polders</span>
               </>
             ) : isHV ? (
               <>
-                <span>-24 dB · Cleared / Water</span>
-                <span>-16 dB · Sparse Veg</span>
+                <span>-24 dB · Cleared / Scar</span>
+                <span>-16 dB · Moderate Veg</span>
                 <span>-9 dB · Dense Canopy</span>
               </>
             ) : (
@@ -322,9 +325,77 @@ export default function StoryJournal({
             )}
           </div>
         </div>
+
+        {/* 4. RADAR FREQUENCY BAND SELECTOR (Integrated into main panel) */}
+        <div className="bg-[#FFFFFF] border border-[#E2E8F0] rounded-xl p-3 flex flex-col gap-2">
+          <div className="flex items-center justify-between text-xs font-semibold text-[#0F172A]">
+            <span>Radar Frequency Band</span>
+            <span className="text-[10px] text-[#2563EB] font-medium">
+              {selectedBand === 'L-Band'
+                ? '24 cm · Penetrates Soil & Full Canopy'
+                : selectedBand === 'S-Band'
+                ? '9.3 cm · Crop Structure Sensitive'
+                : '5.6 cm · Surface Roughness'}
+            </span>
+          </div>
+          <div className="grid grid-cols-3 gap-1.5">
+            {[
+              { id: 'L-Band', label: 'L-Band (24 cm)', desc: 'NISAR Primary' },
+              { id: 'S-Band', label: 'S-Band (9.3 cm)', desc: 'ISRO Payload' },
+              { id: 'C-Band', label: 'C-Band (5.6 cm)', desc: 'Sentinel / RADARSAT' },
+            ].map((b) => {
+              const isSelected = selectedBand === b.id;
+              return (
+                <button
+                  key={b.id}
+                  onClick={() => onSelectBand?.(b.id)}
+                  className={`py-1.5 px-2 text-xs rounded-lg transition-all text-center border ${
+                    isSelected
+                      ? 'bg-[#2563EB] text-white border-[#2563EB] font-semibold shadow-sm'
+                      : 'bg-[#F8FAFC] text-[#475569] border-[#E2E8F0] hover:bg-[#F1F5F9] hover:text-[#0F172A]'
+                  }`}
+                >
+                  <div className="text-[11px] font-semibold leading-tight">{b.id}</div>
+                  <div className={`text-[9px] ${isSelected ? 'text-white/80' : 'text-[#64748B]'}`}>{b.desc}</div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 5. CONTEXT OVERLAYS TOGGLES (Integrated into main panel) */}
+        <div className="bg-[#FFFFFF] border border-[#E2E8F0] rounded-xl p-3 flex flex-col gap-2">
+          <div className="flex items-center justify-between text-xs font-semibold text-[#0F172A]">
+            <span>Context Overlays</span>
+            <span className="text-[10px] text-[#64748B]">Ancillary Reference Layers</span>
+          </div>
+          <div className="grid grid-cols-3 gap-1.5">
+            {[
+              { id: 'population', label: 'Settlements', icon: '🏙️' },
+              { id: 'agriculture', label: 'Agriculture', icon: '🌾' },
+              { id: 'infrastructure', label: 'Corridors', icon: '🛣️' },
+            ].map((o) => {
+              const isVisible = ancillaryVisible?.includes(o.id);
+              return (
+                <button
+                  key={o.id}
+                  onClick={() => onToggleAncillary?.(o.id)}
+                  className={`py-1.5 px-2 text-xs rounded-lg transition-all text-center flex items-center justify-center gap-1 border ${
+                    isVisible
+                      ? 'bg-[#10B981] text-white border-[#10B981] font-semibold shadow-sm'
+                      : 'bg-[#F8FAFC] text-[#475569] border-[#E2E8F0] hover:bg-[#F1F5F9] hover:text-[#0F172A]'
+                  }`}
+                >
+                  <span className="text-[10px]">{o.icon}</span>
+                  <span className="text-[11px] font-medium">{o.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
-      {/* 3. BOTTOM SECTION: 2-BUTTON ACTION ROW & INSTRUMENT MODE LINK */}
+      {/* 3. BOTTOM SECTION: 2-BUTTON ACTION ROW */}
       <div className="p-5 border-t border-[#E2E8F0] shrink-0 bg-[#FFFFFF] flex flex-col gap-3">
         <div className="grid grid-cols-2 gap-2">
           {/* Action 1: Time-Series Waltz Animation */}
@@ -351,15 +422,6 @@ export default function StoryJournal({
             <span>{isPlayingSonification ? '⏹ Stop Audio' : '🔊 Audio Sonification'}</span>
           </button>
         </div>
-
-        {/* Pro Link to Instrument Workbench */}
-        <button
-          onClick={onSwitchToInstrument}
-          className="w-full py-2 px-3 rounded-lg bg-[#F8FAFC] hover:bg-[#F1F5F9] border border-[#E2E8F0] text-xs font-medium text-[#475569] hover:text-[#0F172A] transition-colors flex items-center justify-between"
-        >
-          <span>Need HDF5 telemetry & STAC search?</span>
-          <span className="font-semibold text-[#2563EB]">Instrument Mode →</span>
-        </button>
       </div>
     </aside>
   );

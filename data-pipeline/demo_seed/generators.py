@@ -109,7 +109,6 @@ def generate_kerala(out_dir):
     hh = np.clip(hh, -26.0, 0.5).astype(np.float32)
 
     rgba_hh = colormap_hh(hh)
-    rgba_hh[..., 3] = 240
     rgba_hh[ocean_mask, 3] = 0
 
     write_geotiff(out / "hh_backscatter.tif", hh, bbox)
@@ -127,7 +126,6 @@ def generate_kerala(out_dir):
     hv = np.clip(hv, -25.0, -9.0).astype(np.float32)
 
     rgba_hv = colormap_hv(hv)
-    rgba_hv[..., 3] = 240
     rgba_hv[ocean_mask, 3] = 0
 
     write_geotiff(out / "hv_backscatter.tif", hv, bbox)
@@ -145,7 +143,6 @@ def generate_kerala(out_dir):
     coh = np.clip(coh, 0.0, 1.0).astype(np.float32)
 
     rgba_coh = colormap_coherence(coh)
-    rgba_coh[..., 3] = 240
     rgba_coh[ocean_mask, 3] = 0
 
     write_geotiff(out / "coherence.tif", coh, bbox)
@@ -161,7 +158,6 @@ def generate_kerala(out_dir):
     phase[subsidence] = np.sin(elev[subsidence] * 3.5 + noise[subsidence] * 2.0) * 1.8
 
     rgba_phase = colormap_phase(phase, coherence=coh)
-    rgba_phase[..., 3] = 240
     rgba_phase[ocean_mask, 3] = 0
 
     write_geotiff(out / "insar_phase.tif", phase, bbox)
@@ -216,7 +212,6 @@ def generate_amazon(out_dir):
     hh = np.clip(hh, -25.0, 0.0).astype(np.float32)
 
     rgba_hh = colormap_hh(hh)
-    rgba_hh[..., 3] = 240
     write_geotiff(out / "hh_backscatter.tif", hh, bbox)
     write_webp(out / "hh_backscatter.webp", rgba_hh)
     write_telemetry_json(out / "telemetry_hh.json", hh, "dB", bbox)
@@ -230,7 +225,6 @@ def generate_amazon(out_dir):
     hv = np.clip(hv, -25.0, -9.0).astype(np.float32)
 
     rgba_hv = colormap_hv(hv)
-    rgba_hv[..., 3] = 240
     write_geotiff(out / "hv_backscatter.tif", hv, bbox)
     write_webp(out / "hv_backscatter.webp", rgba_hv)
     write_telemetry_json(out / "telemetry_hv.json", hv, "dB", bbox)
@@ -245,7 +239,6 @@ def generate_amazon(out_dir):
     coh = np.clip(coh, 0.0, 1.0).astype(np.float32)
 
     rgba_coh = colormap_coherence(coh)
-    rgba_coh[..., 3] = 240
     write_geotiff(out / "coherence.tif", coh, bbox)
     write_webp(out / "coherence.webp", rgba_coh)
     write_telemetry_json(out / "telemetry_coherence.json", coh, "coherence", bbox)
@@ -254,7 +247,6 @@ def generate_amazon(out_dir):
     phase = np.zeros(SHAPE, dtype=np.float32)
     phase[varzea] = np.sin((elev[varzea] - 12.0) * 0.8) * 2.2
     rgba_phase = colormap_phase(phase, coherence=coh)
-    rgba_phase[..., 3] = 240
 
     write_geotiff(out / "insar_phase.tif", phase, bbox)
     write_webp(out / "insar_phase.webp", rgba_phase)
@@ -264,9 +256,7 @@ def generate_amazon(out_dir):
     saocom_hh = np.clip(hh * 0.98 - 0.4, -25.0, 0.0).astype(np.float32)
     saocom_hv = np.clip(hv * 0.98 - 0.5, -25.0, -9.0).astype(np.float32)
     rgba_saocom_hh = colormap_hh(saocom_hh)
-    rgba_saocom_hh[..., 3] = 240
     rgba_saocom_hv = colormap_hv(saocom_hv)
-    rgba_saocom_hv[..., 3] = 240
     write_geotiff(out / "saocom_hh.tif", saocom_hh, bbox)
     write_webp(out / "saocom_hh.webp", rgba_saocom_hh)
     write_telemetry_json(out / "telemetry_saocom_hh.json", saocom_hh, "dB", bbox)
@@ -313,7 +303,6 @@ def generate_himalayas(out_dir):
     hh = np.clip(hh, -24.0, 2.0).astype(np.float32)
 
     rgba_hh = colormap_hh(hh)
-    rgba_hh[..., 3] = 240
     write_geotiff(out / "hh_backscatter.tif", hh, bbox)
     write_webp(out / "hh_backscatter.webp", rgba_hh)
     write_telemetry_json(out / "telemetry_hh.json", hh, "dB", bbox)
@@ -325,7 +314,6 @@ def generate_himalayas(out_dir):
     hv = np.clip(hv, -25.0, -10.0).astype(np.float32)
 
     rgba_hv = colormap_hv(hv)
-    rgba_hv[..., 3] = 240
     write_geotiff(out / "hv_backscatter.tif", hv, bbox)
     write_webp(out / "hv_backscatter.webp", rgba_hv)
     write_telemetry_json(out / "telemetry_hv.json", hv, "dB", bbox)
@@ -338,7 +326,6 @@ def generate_himalayas(out_dir):
     coh = np.clip(coh, 0.05, 0.95).astype(np.float32)
 
     rgba_coh = colormap_coherence(coh)
-    rgba_coh[..., 3] = 240
     write_geotiff(out / "coherence.tif", coh, bbox)
     write_webp(out / "coherence.webp", rgba_coh)
     write_telemetry_json(out / "telemetry_coherence.json", coh, "coherence", bbox)
@@ -346,7 +333,6 @@ def generate_himalayas(out_dir):
     # 4. InSAR Phase (Elevation Contours)
     phase = np.sin(elev / 60.0) * np.pi
     rgba_phase = colormap_phase(phase, coherence=coh)
-    rgba_phase[..., 3] = 240
     write_geotiff(out / "insar_phase.tif", phase, bbox)
     write_webp(out / "insar_phase.webp", rgba_phase)
     write_telemetry_json(out / "telemetry_insar.json", phase, "rad", bbox)
@@ -409,7 +395,6 @@ def generate_turkey(out_dir):
     hh = np.clip(hh, -25.0, 0.5).astype(np.float32)
 
     rgba_hh = colormap_hh(hh)
-    rgba_hh[..., 3] = 240
     write_geotiff(out / "hh_backscatter.tif", hh, bbox)
     write_webp(out / "hh_backscatter.webp", rgba_hh)
     write_telemetry_json(out / "telemetry_hh.json", hh, "dB", bbox)
@@ -420,7 +405,6 @@ def generate_turkey(out_dir):
     hv = np.clip(hv, -25.0, -10.0).astype(np.float32)
 
     rgba_hv = colormap_hv(hv)
-    rgba_hv[..., 3] = 240
     write_geotiff(out / "hv_backscatter.tif", hv, bbox)
     write_webp(out / "hv_backscatter.webp", rgba_hv)
     write_telemetry_json(out / "telemetry_hv.json", hv, "dB", bbox)
@@ -440,7 +424,6 @@ def generate_turkey(out_dir):
     coh = np.clip(coh, 0.0, 1.0).astype(np.float32)
 
     rgba_coh = colormap_coherence(coh)
-    rgba_coh[..., 3] = 240
     write_geotiff(out / "coherence.tif", coh, bbox)
     write_webp(out / "coherence.webp", rgba_coh)
     write_telemetry_json(out / "telemetry_coherence.json", coh, "coherence", bbox)
@@ -450,7 +433,6 @@ def generate_turkey(out_dir):
     slip = np.sign(yy - (0.85 * xx + 40.0)) * np.exp(-dist_fault / 120.0) * 3.8 * np.pi
     phase = np.sin(slip + elev / 85.0) * np.pi
     rgba_phase = colormap_phase(phase, coherence=coh)
-    rgba_phase[..., 3] = 240
 
     write_geotiff(out / "insar_phase.tif", phase, bbox)
     write_webp(out / "insar_phase.webp", rgba_phase)
@@ -495,7 +477,6 @@ def generate_punjab(out_dir):
     hh = np.clip(hh, -25.0, 0.5).astype(np.float32)
 
     rgba_hh = colormap_hh(hh)
-    rgba_hh[..., 3] = 240
     write_geotiff(out / "hh_backscatter.tif", hh, bbox)
     write_webp(out / "hh_backscatter.webp", rgba_hh)
     write_telemetry_json(out / "telemetry_hh.json", hh, "dB", bbox)
@@ -506,7 +487,6 @@ def generate_punjab(out_dir):
     hv = np.clip(hv, -25.0, -10.0).astype(np.float32)
 
     rgba_hv = colormap_hv(hv)
-    rgba_hv[..., 3] = 240
     write_geotiff(out / "hv_backscatter.tif", hv, bbox)
     write_webp(out / "hv_backscatter.webp", rgba_hv)
     write_telemetry_json(out / "telemetry_hv.json", hv, "dB", bbox)
@@ -519,7 +499,6 @@ def generate_punjab(out_dir):
     coh = np.clip(coh, 0.0, 1.0).astype(np.float32)
 
     rgba_coh = colormap_coherence(coh)
-    rgba_coh[..., 3] = 240
     write_geotiff(out / "coherence.tif", coh, bbox)
     write_webp(out / "coherence.webp", rgba_coh)
     write_telemetry_json(out / "telemetry_coherence.json", coh, "coherence", bbox)
@@ -527,7 +506,6 @@ def generate_punjab(out_dir):
     # 4. InSAR Phase (Aquifer Subsidence Contours)
     phase = np.sin(phys["elevation"] * 0.4 + veg * 2.0) * np.pi
     rgba_phase = colormap_phase(phase, coherence=coh)
-    rgba_phase[..., 3] = 240
     write_geotiff(out / "insar_phase.tif", phase, bbox)
     write_webp(out / "insar_phase.webp", rgba_phase)
     write_telemetry_json(out / "telemetry_insar.json", phase, "rad", bbox)
@@ -537,9 +515,7 @@ def generate_punjab(out_dir):
     sband_hv = np.clip(hv + veg * 3.2 - 0.5, -24.0, -9.0).astype(np.float32)
 
     rgba_sband_hh = colormap_hh(sband_hh)
-    rgba_sband_hh[..., 3] = 240
     rgba_sband_hv = colormap_hv(sband_hv)
-    rgba_sband_hv[..., 3] = 240
     write_geotiff(out / "sband_hh.tif", sband_hh, bbox)
     write_webp(out / "sband_hh.webp", rgba_sband_hh)
     write_telemetry_json(out / "telemetry_sband_hh.json", sband_hh, "dB", bbox)
@@ -584,7 +560,6 @@ def generate_indonesia(out_dir):
     hh = np.clip(hh, -25.0, 0.0).astype(np.float32)
 
     rgba_hh = colormap_hh(hh)
-    rgba_hh[..., 3] = 240
     write_geotiff(out / "hh_backscatter.tif", hh, bbox)
     write_webp(out / "hh_backscatter.webp", rgba_hh)
     write_telemetry_json(out / "telemetry_hh.json", hh, "dB", bbox)
@@ -595,7 +570,6 @@ def generate_indonesia(out_dir):
     hv = np.clip(hv, -25.0, -9.0).astype(np.float32)
 
     rgba_hv = colormap_hv(hv)
-    rgba_hv[..., 3] = 240
     write_geotiff(out / "hv_backscatter.tif", hv, bbox)
     write_webp(out / "hv_backscatter.webp", rgba_hv)
     write_telemetry_json(out / "telemetry_hv.json", hv, "dB", bbox)
@@ -606,7 +580,6 @@ def generate_indonesia(out_dir):
     coh = np.clip(coh, 0.0, 1.0).astype(np.float32)
 
     rgba_coh = colormap_coherence(coh)
-    rgba_coh[..., 3] = 240
     write_geotiff(out / "coherence.tif", coh, bbox)
     write_webp(out / "coherence.webp", rgba_coh)
     write_telemetry_json(out / "telemetry_coherence.json", coh, "coherence", bbox)
@@ -614,7 +587,6 @@ def generate_indonesia(out_dir):
     # 4. InSAR Phase (Peatland Subsidence)
     phase = np.sin(phys["elevation"] * 0.6) * np.pi
     rgba_phase = colormap_phase(phase, coherence=coh)
-    rgba_phase[..., 3] = 240
     write_geotiff(out / "insar_phase.tif", phase, bbox)
     write_webp(out / "insar_phase.webp", rgba_phase)
     write_telemetry_json(out / "telemetry_insar.json", phase, "rad", bbox)
@@ -624,9 +596,7 @@ def generate_indonesia(out_dir):
     cband_vv = np.clip(hh - 1.2 + veg * 1.2, -24.0, 0.5).astype(np.float32)
 
     rgba_cband_hv = colormap_hv(cband_hv)
-    rgba_cband_hv[..., 3] = 240
     rgba_cband_vv = colormap_hh(cband_vv)
-    rgba_cband_vv[..., 3] = 240
     write_geotiff(out / "cband_hv.tif", cband_hv, bbox)
     write_webp(out / "cband_hv.webp", rgba_cband_hv)
     write_telemetry_json(out / "telemetry_cband_hv.json", cband_hv, "dB", bbox)

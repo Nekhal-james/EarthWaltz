@@ -229,12 +229,9 @@ export default function Globe({
   mode = 'story',
 }: GlobeProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const leftContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
-  const mapLeftRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
   const isLoadedRef = useRef(false);
-  const isLeftLoadedRef = useRef(false);
 
   // Cached base image element for offscreen dynamic canvas frame modulation
   const baseImageRef = useRef<HTMLImageElement | null>(null);
@@ -253,15 +250,6 @@ export default function Globe({
       duration: duration,
       essential: true,
     });
-
-    if (mapLeftRef.current) {
-      mapLeftRef.current.jumpTo({
-        center: [area.lng, area.lat],
-        zoom: 10.0,
-        pitch: 18,
-        bearing: 0,
-      });
-    }
   }, []);
 
   // Modulate SAR raster pixel data on timeline step or frequency band changes
@@ -375,9 +363,6 @@ export default function Globe({
         }
       }
 
-      ctx.putImageData(imgData, 0, 0);
-      const dataUrl = canvas.toDataURL('image/webp', 0.85);
-
       const bbox = activeArea.bbox || [
         activeArea.lng - 0.45,
         activeArea.lat - 0.40,
@@ -385,6 +370,51 @@ export default function Globe({
         activeArea.lat + 0.40,
       ];
       const [west, south, east, north] = bbox;
+
+      // -----------------------------------------------------------------
+      // REAL-TIME SPLIT CURTAIN CLIPPING: Optical Clouds vs. NISAR Radar
+      // -----------------------------------------------------------------
+      if (mode === 'story' && containerRef.current && map) {
+        const containerWidth = containerRef.current.clientWidth || 800;
+        const containerHeight = containerRef.current.clientHeight || 600;
+        const curtainScreenX = ((curtainPosition ?? 35) / 100) * containerWidth;
+        const curtainLng = map.unproject([curtainScreenX, containerHeight / 2]).lng;
+
+        const splitFraction = (curtainLng - west) / (east - west);
+        const splitPx = Math.floor(splitFraction * w);
+
+        if (splitPx > 0) {
+          // Render soft atmospheric/monsoon cloud wisps on the left of the split line
+          for (let y = 0; y < h; y++) {
+            const ny = y / h;
+            for (let x = 0; x < Math.min(w, splitPx); x++) {
+              const nx = x / w;
+              const idx = (y * w + x) * 4;
+
+              // Fractal multi-scale billowy cloud noise
+              const n1 = Math.sin(nx * 14.0 + ny * 11.0) * Math.cos(ny * 17.0 - nx * 8.0);
+              const n2 = Math.sin(nx * 31.0 + ny * 26.0) * 0.5;
+              const cloudVal = Math.max(0, Math.min(1, (n1 + n2 + 1.4) / 2.8));
+
+              // Soft cloud boundary near the vertical divider
+              const distFromDivider = splitPx - x;
+              const edgeFade = distFromDivider < 12 ? distFromDivider / 12 : 1.0;
+
+              // Opaque white cloud banks (alpha 185 to 245) obscuring optical terrain
+              const cloudAlpha = Math.round((185 + cloudVal * 60) * edgeFade);
+
+              data[idx] = Math.round(246 + cloudVal * 8);       // R
+              data[idx + 1] = Math.round(249 + cloudVal * 6);   // G
+              data[idx + 2] = 255;                              // B
+              data[idx + 3] = cloudAlpha;                       // Alpha
+            }
+          }
+        }
+      }
+
+      ctx.putImageData(imgData, 0, 0);
+      const dataUrl = canvas.toDataURL('image/webp', 0.85);
+
       const swathCoords: [[number, number], [number, number], [number, number], [number, number]] = [
         [west, north],
         [east, north],
@@ -396,7 +426,7 @@ export default function Globe({
     } catch (err) {
       console.warn('Canvas modulation update error:', err);
     }
-  }, [activeArea]);
+  }, [activeArea, curtainPosition, mode]);
 
   // Render Ancillary Context Overlays (Human Settlements, Agriculture, Infrastructure)
   const renderAncillaryLayers = useCallback(() => {
@@ -613,65 +643,12 @@ export default function Globe({
     }
   }, [activeArea, activeLayer, opacity, timelineIndex, selectedBand, updateModulatedRaster, renderAncillaryLayers]);
 
-  // Render optical satellite comparison on the left synchronized map
-  const renderOpticalOverlay = useCallback(() => {
-    const leftMap = mapLeftRef.current;
-    if (!leftMap || !leftMap.isStyleLoaded()) return;
-
-    const opticalPath = activeArea.optical_cloudy
-      ? `/data/${activeArea.optical_cloudy}`
-      : '/data/optical_cloudy.webp';
-
-    const bbox = activeArea.bbox || [
-      activeArea.lng - 0.45,
-      activeArea.lat - 0.40,
-      activeArea.lng + 0.45,
-      activeArea.lat + 0.40,
-    ];
-    const [west, south, east, north] = bbox;
-    const swathCoords: [[number, number], [number, number], [number, number], [number, number]] = [
-      [west, north],
-      [east, north],
-      [east, south],
-      [west, south],
-    ];
-
-    try {
-      const existingSource = leftMap.getSource('optical-overlay') as maplibregl.ImageSource | undefined;
-      if (existingSource) {
-        existingSource.setCoordinates(swathCoords);
-        existingSource.updateImage({ url: opticalPath, coordinates: swathCoords });
-        if (leftMap.getLayer('optical-overlay-layer')) {
-          leftMap.setPaintProperty('optical-overlay-layer', 'raster-opacity', 0.98);
-        }
-      } else {
-        leftMap.addSource('optical-overlay', {
-          type: 'image',
-          url: opticalPath,
-          coordinates: swathCoords,
-        });
-        leftMap.addLayer({
-          id: 'optical-overlay-layer',
-          type: 'raster',
-          source: 'optical-overlay',
-          paint: {
-            'raster-opacity': 0.98,
-            'raster-fade-duration': 150,
-            'raster-resampling': 'linear',
-          },
-        });
-      }
-    } catch (err) {
-      console.warn('MapLibre optical overlay warning:', err);
-    }
-  }, [activeArea]);
-
-  // Update modulated raster when timeline index or frequency band changes
+  // Update modulated raster when timeline index, frequency band, curtain position, or mode changes
   useEffect(() => {
     if (baseImageRef.current) {
       updateModulatedRaster(timelineIndex, selectedBand);
     }
-  }, [timelineIndex, selectedBand, updateModulatedRaster]);
+  }, [timelineIndex, selectedBand, curtainPosition, mode, updateModulatedRaster]);
 
   // React to ancillary layer visibility toggles
   useEffect(() => {
@@ -758,7 +735,7 @@ export default function Globe({
     }
   }, [captureTrigger, exportSnapshot]);
 
-  // Initialize MapLibre Map instances (Dual-Mode: Primary Interactive Map + Synchronized Left Map)
+  // Initialize MapLibre Map instance
   useEffect(() => {
     if (!containerRef.current) return;
 
@@ -774,44 +751,6 @@ export default function Globe({
       preserveDrawingBuffer: true,
     });
 
-    let leftMap: maplibregl.Map | null = null;
-    if (leftContainerRef.current) {
-      // Deep clone style to avoid mutation conflict between map instances
-      const leftStyle = JSON.parse(JSON.stringify(ESRI_SATELLITE_STYLE));
-
-      leftMap = new maplibregl.Map({
-        container: leftContainerRef.current,
-        style: leftStyle,
-        center: [activeArea.lng, activeArea.lat],
-        zoom: 10.0,
-        pitch: 18,
-        bearing: 0,
-        attributionControl: false,
-        renderWorldCopies: false,
-        interactive: false,
-      });
-
-      // Assign ref IMMEDIATELY so any callback has access to it
-      mapLeftRef.current = leftMap;
-
-      leftMap.on('load', () => {
-        isLeftLoadedRef.current = true;
-        if (mapRef.current) {
-          leftMap?.jumpTo({
-            center: mapRef.current.getCenter(),
-            zoom: mapRef.current.getZoom(),
-            pitch: mapRef.current.getPitch(),
-            bearing: mapRef.current.getBearing(),
-          });
-        }
-        renderOpticalOverlay();
-      });
-
-      leftMap.on('style.load', () => {
-        renderOpticalOverlay();
-      });
-    }
-
     map.addControl(new maplibregl.NavigationControl({ showCompass: true }), 'bottom-right');
     map.addControl(
       new maplibregl.AttributionControl({ compact: true, customAttribution: 'EarthWaltz · NASA EOSDIS · ISRO' }),
@@ -826,14 +765,10 @@ export default function Globe({
       onCursorMove?.(null);
     });
 
+    // Continuously update dynamic split curtain longitude clipping on map pan/zoom at 60 FPS
     map.on('move', () => {
-      if (mapLeftRef.current) {
-        mapLeftRef.current.jumpTo({
-          center: map.getCenter(),
-          zoom: map.getZoom(),
-          pitch: map.getPitch(),
-          bearing: map.getBearing(),
-        });
+      if (mode === 'story' && baseImageRef.current) {
+        updateModulatedRaster(timelineIndex, selectedBand);
       }
     });
 
@@ -851,7 +786,6 @@ export default function Globe({
     // Observe container size changes (e.g. switching between Story Mode & Instrument Mode)
     const resizeObserver = new ResizeObserver(() => {
       map.resize();
-      mapLeftRef.current?.resize();
     });
     if (containerRef.current) {
       resizeObserver.observe(containerRef.current);
@@ -862,11 +796,6 @@ export default function Globe({
       map.remove();
       mapRef.current = null;
       isLoadedRef.current = false;
-      if (leftMap) {
-        leftMap.remove();
-        mapLeftRef.current = null;
-        isLeftLoadedRef.current = false;
-      }
     };
   }, []);
 
@@ -890,17 +819,15 @@ export default function Globe({
   // React to active study area or layer changes: re-render overlay & fly camera
   useEffect(() => {
     renderSarOverlay();
-    renderOpticalOverlay();
     fitAreaBounds(activeArea);
 
     const map = mapRef.current;
     if (map) {
       map.once('moveend', () => {
         renderSarOverlay();
-        renderOpticalOverlay();
       });
     }
-  }, [activeArea, activeLayer, fitAreaBounds, renderSarOverlay, renderOpticalOverlay]);
+  }, [activeArea, activeLayer, fitAreaBounds, renderSarOverlay]);
 
   // 12-step Orbital Waltz Camera Choreography on timeline play
   useEffect(() => {
@@ -1002,22 +929,5 @@ export default function Globe({
     });
   }, [areas, activeArea.id, onAreaClick]);
 
-  return (
-    <div className="w-full h-full relative overflow-hidden">
-      {/* Right / Base Map: Primary Interactive NISAR Radar Swath */}
-      <div ref={containerRef} className="w-full h-full absolute inset-0 z-0" />
-
-      {/* Left Map: Geographically-Synchronized Optical Satellite Comparison View */}
-      <div
-        ref={leftContainerRef}
-        className="w-full h-full absolute inset-0 z-10 pointer-events-none transition-[clip-path] duration-75 ease-out"
-        style={{
-          clipPath:
-            mode === 'story'
-              ? `inset(0 ${100 - (curtainPosition ?? 35)}% 0 0)`
-              : 'inset(0 100% 0 0)',
-        }}
-      />
-    </div>
-  );
+  return <div ref={containerRef} className="w-full h-full relative" />;
 }

@@ -168,6 +168,14 @@ export default function HomePage() {
             onToggleSonification={handleToggleStorySonification}
             isPlayingTimeline={isTimelinePlaying}
             onToggleTimeline={() => setIsTimelinePlaying((prev) => !prev)}
+            selectedBand={selectedBand}
+            onSelectBand={setSelectedBand}
+            ancillaryVisible={ancillaryVisible}
+            onToggleAncillary={(layerId) =>
+              setAncillaryVisible((prev) =>
+                prev.includes(layerId) ? prev.filter((l) => l !== layerId) : [...prev, layerId]
+              )
+            }
           />
         ) : (
           <InspectorSidebar
