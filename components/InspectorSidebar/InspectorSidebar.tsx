@@ -112,7 +112,7 @@ export default function InspectorSidebar({
         dataArray.fill(0);
       }
 
-      ctx.fillStyle = '#181916';
+      ctx.fillStyle = '#F1F5F9';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       const barWidth = (canvas.width / bufferLength) * 1.5;
@@ -122,7 +122,7 @@ export default function InspectorSidebar({
         const v = dataArray[i] / 255;
         const barHeight = Math.max(2, v * canvas.height);
 
-        ctx.fillStyle = isPlaying ? '#10B981' : '#242522';
+        ctx.fillStyle = isPlaying ? '#2563EB' : '#CBD5E1';
         ctx.fillRect(x, canvas.height - barHeight, barWidth - 1, barHeight);
         x += barWidth;
       }
@@ -172,52 +172,52 @@ export default function InspectorSidebar({
   };
 
   return (
-    <aside className="w-80 h-[calc(100vh-3.5rem)] bg-[#111210] border-r border-[#242522] flex flex-col z-30 overflow-y-auto select-none">
+    <aside className="w-80 h-[calc(100vh-3.5rem)] bg-[#FFFFFF] border-r border-[#E2E8F0] flex flex-col z-30 overflow-y-auto select-none font-sans shadow-sm">
       {/* SECTION A: STUDY AREA CONTEXT & PROVENANCE */}
-      <section className="p-4 border-b border-[#242522] flex flex-col gap-2.5">
+      <section className="p-4 border-b border-[#E2E8F0] flex flex-col gap-2.5">
         <div>
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-medium text-[#9A9B94]">
+            <span className="text-[11px] font-semibold text-[#64748B]">
               Study area
             </span>
             {area.hometown && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#181916] border border-[#242522] text-[#10B981] font-medium">
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#2563EB]/10 border border-[#2563EB]/20 text-[#2563EB] font-semibold">
                 Hometown Focus
               </span>
             )}
           </div>
-          <h2 className="text-base font-semibold text-[#F3F2EE] mt-0.5">{area.name}</h2>
-          <p className="text-xs text-[#9A9B94] mt-0.5">{area.phenomenon}</p>
+          <h2 className="text-base font-bold text-[#0F172A] mt-0.5">{area.name}</h2>
+          <p className="text-xs text-[#64748B] mt-0.5">{area.phenomenon}</p>
         </div>
 
         {/* Plain-English Scientific Narrative */}
-        <p className="text-xs text-[#9A9B94] leading-relaxed">
+        <p className="text-xs text-[#334155] leading-relaxed">
           {area.narrative || area.description}
         </p>
 
         {/* Provenance Card */}
-        <div className="bg-[#181916] border border-[#242522] rounded-md p-2.5 flex flex-col gap-1.5 text-xs">
+        <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-2.5 flex flex-col gap-1.5 text-xs">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-medium text-[#9A9B94]">Data provenance</span>
-            <span className="text-[10px] text-[#10B981] font-medium">
+            <span className="text-[11px] font-semibold text-[#64748B]">Data provenance</span>
+            <span className="text-[10px] text-[#2563EB] font-semibold">
               {area.provenance?.orbit_direction || 'Ascending'}
             </span>
           </div>
 
-          <div className="font-mono text-[11px] text-[#F3F2EE] truncate tabular-nums" title={area.provenance?.granule_id}>
+          <div className="font-mono text-[11px] text-[#0F172A] truncate tabular-nums" title={area.provenance?.granule_id}>
             ID: {area.provenance?.granule_id || 'ALAV2A278633410'}
           </div>
 
-          <div className="text-[11px] text-[#9A9B94] truncate">
+          <div className="text-[11px] text-[#64748B] truncate">
             {area.provenance?.platform || 'NISAR L-Band (24 cm)'}
           </div>
 
-          <div className="flex items-center gap-3 pt-1 border-t border-[#242522] text-[11px]">
+          <div className="flex items-center gap-3 pt-1 border-t border-[#E2E8F0] text-[11px]">
             <a
               href={area.provenance?.vertex_url || 'https://search.asf.alaska.edu/'}
               target="_blank"
               rel="noreferrer"
-              className="text-[#10B981] hover:underline"
+              className="text-[#2563EB] font-medium hover:underline"
             >
               ASF Vertex ↗
             </a>
@@ -225,7 +225,7 @@ export default function InspectorSidebar({
               href={area.provenance?.earthdata_search_url || 'https://search.earthdata.nasa.gov/'}
               target="_blank"
               rel="noreferrer"
-              className="text-[#9A9B94] hover:text-[#F3F2EE] hover:underline"
+              className="text-[#64748B] hover:text-[#0F172A] hover:underline"
             >
               Earthdata Search ↗
             </a>
@@ -234,23 +234,23 @@ export default function InspectorSidebar({
       </section>
 
       {/* SECTION B: RADAR CHANNEL & FREQUENCY */}
-      <section className="p-4 border-b border-[#242522] flex flex-col gap-3">
+      <section className="p-4 border-b border-[#E2E8F0] flex flex-col gap-3">
         <div>
-          <span className="text-[11px] font-medium text-[#9A9B94]">
+          <span className="text-[11px] font-semibold text-[#64748B]">
             Radar frequency
           </span>
           {/* Frequency Tabs */}
-          <div className="grid grid-cols-3 gap-1 bg-[#181916] border border-[#242522] rounded-md p-0.5 mt-1.5">
+          <div className="grid grid-cols-3 gap-1 bg-[#F1F5F9] border border-[#E2E8F0] rounded-lg p-0.5 mt-1.5">
             {['L-Band', 'S-Band', 'C-Band'].map((band) => {
               const isSelected = selectedBand === band;
               return (
                 <button
                   key={band}
                   onClick={() => handleFrequencySelect(band)}
-                  className={`py-1 text-[11px] font-medium rounded transition-colors text-center ${
+                  className={`py-1 text-[11px] font-medium rounded-md transition-colors text-center ${
                     isSelected
-                      ? 'bg-[#242522] text-[#F3F2EE] shadow-sm'
-                      : 'text-[#9A9B94] hover:text-[#F3F2EE] hover:bg-[#181916]'
+                      ? 'bg-[#FFFFFF] text-[#0F172A] shadow-sm font-semibold'
+                      : 'text-[#64748B] hover:text-[#0F172A] hover:bg-[#FFFFFF]/50'
                   }`}
                 >
                   {band}
@@ -261,18 +261,18 @@ export default function InspectorSidebar({
 
           {/* Dynamic Frequency Physics Spec */}
           {BAND_SPECS[selectedBand] && (
-            <div className="bg-[#181916] border border-[#242522] rounded-md p-2.5 flex flex-col gap-1.5 mt-2">
+            <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-2.5 flex flex-col gap-1.5 mt-2">
               <div className="flex items-center justify-between text-[11px]">
-                <span className="text-[#9A9B94]">Wavelength:</span>
-                <span className="font-mono text-[#10B981] font-medium tabular-nums">
+                <span className="text-[#64748B]">Wavelength:</span>
+                <span className="font-mono text-[#2563EB] font-bold tabular-nums">
                   {BAND_SPECS[selectedBand].wavelength} ({BAND_SPECS[selectedBand].frequency})
                 </span>
               </div>
               <div className="flex items-center justify-between text-[11px]">
-                <span className="text-[#9A9B94]">Penetration depth:</span>
-                <span className="text-[#F3F2EE]">{BAND_SPECS[selectedBand].depth}</span>
+                <span className="text-[#64748B]">Penetration depth:</span>
+                <span className="text-[#0F172A] font-medium">{BAND_SPECS[selectedBand].depth}</span>
               </div>
-              <p className="text-[10px] text-[#9A9B94] leading-snug pt-1.5 border-t border-[#242522]">
+              <p className="text-[10px] text-[#64748B] leading-snug pt-1.5 border-t border-[#E2E8F0]">
                 {BAND_SPECS[selectedBand].note}
               </p>
             </div>
@@ -281,7 +281,7 @@ export default function InspectorSidebar({
 
         {/* Radio-style List for Polarization Channels */}
         <div className="flex flex-col gap-1.5 pt-1">
-          <span className="text-[11px] font-medium text-[#9A9B94]">
+          <span className="text-[11px] font-semibold text-[#64748B]">
             Radar channels
           </span>
           <div className="flex flex-col gap-1">
@@ -292,23 +292,23 @@ export default function InspectorSidebar({
                 <button
                   key={key}
                   onClick={() => onSelectLayer(key)}
-                  className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-md text-left transition-colors border ${
+                  className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left transition-colors border ${
                     isSelected
-                      ? 'bg-[#181916] border-[#242522] text-[#F3F2EE]'
-                      : 'border-transparent text-[#9A9B94] hover:bg-[#181916]/60 hover:text-[#F3F2EE]'
+                      ? 'bg-[#F1F5F9] border-[#CBD5E1] text-[#0F172A] font-medium'
+                      : 'border-transparent text-[#475569] hover:bg-[#F8FAFC] hover:text-[#0F172A]'
                   }`}
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     <div
                       className={`w-3 h-3 rounded-full border flex items-center justify-center shrink-0 ${
-                        isSelected ? 'border-[#10B981]' : 'border-[#242522]'
+                        isSelected ? 'border-[#2563EB]' : 'border-[#CBD5E1]'
                       }`}
                     >
-                      {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-[#10B981]" />}
+                      {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-[#2563EB]" />}
                     </div>
                     <span className="text-xs truncate">{layer.label}</span>
                   </div>
-                  <span className="font-mono text-[10px] text-[#9A9B94] shrink-0 ml-2">
+                  <span className="font-mono text-[10px] text-[#64748B] shrink-0 ml-2">
                     {layer.unit}
                   </span>
                 </button>
@@ -322,7 +322,7 @@ export default function InspectorSidebar({
       <section className="p-4 pb-14 flex flex-col gap-3.5">
         {/* Context Overlays */}
         <div className="flex flex-col gap-1.5">
-          <span className="text-[11px] font-medium text-[#9A9B94]">
+          <span className="text-[11px] font-semibold text-[#64748B]">
             Map overlays
           </span>
           <div className="flex flex-col gap-1">
@@ -331,13 +331,13 @@ export default function InspectorSidebar({
               return (
                 <label
                   key={layer.id}
-                  className="flex items-center gap-2.5 py-1 px-1 rounded hover:bg-[#181916] cursor-pointer text-xs text-[#9A9B94] hover:text-[#F3F2EE] transition-colors"
+                  className="flex items-center gap-2.5 py-1 px-1 rounded-md hover:bg-[#F8FAFC] cursor-pointer text-xs text-[#475569] hover:text-[#0F172A] transition-colors"
                 >
                   <input
                     type="checkbox"
                     checked={isChecked}
                     onChange={() => onToggleAncillary(layer.id)}
-                    className="w-3.5 h-3.5 rounded border-[#242522] bg-[#181916] text-[#10B981] focus:ring-0 focus:ring-offset-0 cursor-pointer"
+                    className="w-3.5 h-3.5 rounded border-[#CBD5E1] text-[#2563EB] focus:ring-0 focus:ring-offset-0 cursor-pointer"
                   />
                   <span className="truncate">{layer.label}</span>
                 </label>
@@ -347,18 +347,18 @@ export default function InspectorSidebar({
         </div>
 
         {/* Surface Sonification Single-Row Player */}
-        <div className="border-t border-[#242522] pt-3 flex flex-col gap-2">
-          <span className="text-[11px] font-medium text-[#9A9B94]">
+        <div className="border-t border-[#E2E8F0] pt-3 flex flex-col gap-2">
+          <span className="text-[11px] font-semibold text-[#64748B]">
             Audio sonification
           </span>
 
-          <div className="bg-[#181916] border border-[#242522] rounded-md p-2.5 flex items-center justify-between gap-3">
+          <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-2.5 flex items-center justify-between gap-3">
             <button
               onClick={handleSonificationToggle}
-              className={`px-3 py-1 text-xs font-medium rounded border transition-colors shrink-0 ${
+              className={`px-3 py-1 text-xs font-semibold rounded-md border transition-colors shrink-0 ${
                 isPlaying
-                  ? 'bg-[#10B981]/20 text-[#10B981] border-[#10B981]'
-                  : 'bg-[#242522] text-[#F3F2EE] border-[#242522] hover:border-[#9A9B94]'
+                  ? 'bg-[#EF4444] text-white border-[#EF4444]'
+                  : 'bg-[#2563EB] text-white border-[#2563EB] hover:bg-[#1D4ED8]'
               }`}
             >
               {isPlaying ? 'Pause Audio' : 'Play Audio'}
@@ -369,11 +369,11 @@ export default function InspectorSidebar({
               ref={canvasRef}
               width={110}
               height={26}
-              className="bg-[#111210] border border-[#242522] rounded shrink-0"
+              className="bg-[#F1F5F9] border border-[#E2E8F0] rounded shrink-0"
             />
           </div>
 
-          <p className="text-[10px] text-[#9A9B94] leading-tight">
+          <p className="text-[10px] text-[#64748B] leading-tight">
             Synthesizes radar backscatter timeseries into audio frequency (60 Hz – 1.2 kHz).
           </p>
         </div>

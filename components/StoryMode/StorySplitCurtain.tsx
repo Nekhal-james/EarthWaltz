@@ -84,13 +84,13 @@ export default function StorySplitCurtain({
 
         {/* Left Badge: What Optical Satellites See */}
         <div className="absolute top-4 left-4 pointer-events-auto">
-          <div className="bg-[#0D0E0C]/90 backdrop-blur-md border border-[#232520] rounded-md px-3 py-1.5 shadow-xl flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#9A9B94]" />
-            <span className="text-xs font-medium text-[#F4F3EF]">
+          <div className="bg-white/95 backdrop-blur-md border border-[#E2E8F0] rounded-lg px-3 py-1.5 shadow-md flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-[#94A3B8]" />
+            <span className="text-xs font-semibold text-[#0F172A]">
               What optical satellites see
             </span>
-            <span className="text-[10px] text-[#9A9B94] font-mono border-l border-[#232520] pl-2">
-              Cloud-obscured monsoon / smoke view
+            <span className="text-[10px] text-[#64748B] font-medium border-l border-[#E2E8F0] pl-2">
+              Cloud-obscured view
             </span>
           </div>
         </div>
@@ -98,12 +98,12 @@ export default function StorySplitCurtain({
 
       {/* RIGHT OF CURTAIN BADGE: WHAT NISAR RADAR SEES */}
       <div className="absolute top-4 right-4 pointer-events-auto">
-        <div className="bg-[#0D0E0C]/90 backdrop-blur-md border border-[#232520] rounded-md px-3 py-1.5 shadow-xl flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-[#E54D2E]" />
-          <span className="text-xs font-medium text-[#F4F3EF]">
+        <div className="bg-white/95 backdrop-blur-md border border-[#E2E8F0] rounded-lg px-3 py-1.5 shadow-md flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-[#2563EB]" />
+          <span className="text-xs font-semibold text-[#0F172A]">
             What NISAR radar sees
           </span>
-          <span className="text-[10px] text-[#E54D2E] font-mono border-l border-[#232520] pl-2">
+          <span className="text-[10px] text-[#2563EB] font-semibold border-l border-[#E2E8F0] pl-2">
             Penetrates clouds & canopy (24 cm L-band)
           </span>
         </div>
@@ -116,10 +116,10 @@ export default function StorySplitCurtain({
         onPointerDown={handlePointerDown}
       >
         {/* Vertical Rule Line */}
-        <div className="w-[2px] h-full bg-[#E54D2E] shadow-[0_0_8px_rgba(229,77,46,0.6)]" />
+        <div className="w-[2px] h-full bg-[#2563EB] shadow-[0_0_8px_rgba(37,99,235,0.4)]" />
 
-        {/* Central Tactile Vermilion Handle */}
-        <div className="absolute w-8 h-8 rounded-full bg-[#E54D2E] text-white shadow-lg flex items-center justify-center border-2 border-[#0D0E0C] hover:scale-110 active:scale-95 transition-transform">
+        {/* Central Tactile Cobalt Handle */}
+        <div className="absolute w-8 h-8 rounded-full bg-[#2563EB] text-white shadow-lg flex items-center justify-center border-2 border-white hover:scale-110 active:scale-95 transition-transform">
           <div className="flex items-center gap-0.5 text-[11px] font-bold">
             <span>‹</span>
             <span>›</span>

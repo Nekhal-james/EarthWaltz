@@ -252,11 +252,11 @@ export default function Globe({
         [east, north],
       ],
       {
-        padding: { top: 80, bottom: 120, left: 380, right: 60 },
+        padding: { top: 40, bottom: 60, left: 340, right: 40 },
         duration: duration,
         essential: true,
-        maxZoom: 11,
-        minZoom: 8.8,
+        maxZoom: 11.2,
+        minZoom: 9.8,
       }
     );
   }, []);

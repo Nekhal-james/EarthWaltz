@@ -145,35 +145,35 @@ export default function StoryStatusStrip({
   const currentDate = dates[timelineIndex] || dates[0];
 
   return (
-    <footer className="absolute bottom-0 left-0 right-0 h-9 bg-[#0D0E0C]/95 backdrop-blur-md border-t border-[#232520] z-20 px-4 flex items-center justify-between text-xs select-none">
+    <footer className="absolute bottom-0 left-0 right-0 h-9 bg-[#FFFFFF]/95 backdrop-blur-md border-t border-[#E2E8F0] z-20 px-4 flex items-center justify-between text-xs select-none shadow-[0_-1px_3px_rgba(0,0,0,0.03)] font-sans">
       {/* LEFT: LIVE CURSOR COORDINATES & PRIMARY READING */}
       <div className="flex items-center gap-4">
         {/* Coordinates */}
-        <div className="flex items-center gap-1.5 font-mono text-[11px] text-[#9A9B94]">
-          <span className="text-[#F4F3EF]">
+        <div className="flex items-center gap-1.5 font-mono text-[11px] text-[#64748B]">
+          <span className="text-[#0F172A] font-medium">
             {cursorCoords ? cursorCoords.lat.toFixed(4) : area.lat.toFixed(4)}° N,{' '}
             {cursorCoords ? cursorCoords.lng.toFixed(4) : area.lng.toFixed(4)}° E
           </span>
         </div>
 
-        <div className="w-[1px] h-3.5 bg-[#232520]" />
+        <div className="w-[1px] h-3.5 bg-[#E2E8F0]" />
 
         {/* Primary Reading */}
         <div className="flex items-center gap-1.5 font-mono">
-          <span className="text-[#E54D2E] font-semibold tabular-nums text-xs">
+          <span className="text-[#2563EB] font-bold tabular-nums text-xs">
             {currentVal.val > 0 && activeLayer?.unit !== 'coherence' ? `+${currentVal.val.toFixed(2)}` : currentVal.val.toFixed(2)}
           </span>
-          <span className="text-[#9A9B94] text-[10px]">{currentVal.unit}</span>
-          <span className="text-[11px] text-[#9A9B94]">({activeLayer?.label || 'SAR'})</span>
+          <span className="text-[#64748B] text-[10px]">{currentVal.unit}</span>
+          <span className="text-[11px] text-[#64748B]">({activeLayer?.label || 'SAR'})</span>
         </div>
 
-        <div className="w-[1px] h-3.5 bg-[#232520]" />
+        <div className="w-[1px] h-3.5 bg-[#E2E8F0]" />
 
         {/* Plain English Scattering Mechanism */}
-        <div className="text-[11px] text-[#9A9B94] truncate max-w-[460px]">
-          <span className="text-[#F4F3EF]">{mechanismText.split('(')[0].trim()}</span>
+        <div className="text-[11px] text-[#64748B] truncate max-w-[460px]">
+          <span className="text-[#0F172A] font-medium">{mechanismText.split('(')[0].trim()}</span>
           {mechanismText.includes('(') && (
-            <span className="text-[#9A9B94] ml-1">({mechanismText.split('(')[1]}</span>
+            <span className="text-[#64748B] ml-1">({mechanismText.split('(')[1]}</span>
           )}
         </div>
       </div>
@@ -183,7 +183,7 @@ export default function StoryStatusStrip({
         <div className="flex items-center gap-1">
           <button
             onClick={togglePlay}
-            className="w-5 h-5 rounded flex items-center justify-center bg-[#141613] hover:bg-[#181916] text-[#F4F3EF] border border-[#232520] text-[10px] transition-colors"
+            className="w-5 h-5 rounded flex items-center justify-center bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#0F172A] border border-[#E2E8F0] text-[10px] transition-colors"
             title={playing ? 'Pause timeline' : 'Play timeline'}
           >
             {playing ? '⏸' : '▶'}
@@ -194,7 +194,7 @@ export default function StoryStatusStrip({
               const prev = (timelineIndex - 1 + dates.length) % dates.length;
               onTimelineChange(prev, dates[prev]);
             }}
-            className="w-5 h-5 rounded flex items-center justify-center bg-[#141613] hover:bg-[#181916] text-[#9A9B94] hover:text-[#F4F3EF] border border-[#232520] text-[10px] transition-colors"
+            className="w-5 h-5 rounded flex items-center justify-center bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#64748B] hover:text-[#0F172A] border border-[#E2E8F0] text-[10px] transition-colors"
             title="Previous step"
           >
             ‹
@@ -205,7 +205,7 @@ export default function StoryStatusStrip({
               const next = (timelineIndex + 1) % dates.length;
               onTimelineChange(next, dates[next]);
             }}
-            className="w-5 h-5 rounded flex items-center justify-center bg-[#141613] hover:bg-[#181916] text-[#9A9B94] hover:text-[#F4F3EF] border border-[#232520] text-[10px] transition-colors"
+            className="w-5 h-5 rounded flex items-center justify-center bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#64748B] hover:text-[#0F172A] border border-[#E2E8F0] text-[10px] transition-colors"
             title="Next step"
           >
             ›
@@ -214,10 +214,10 @@ export default function StoryStatusStrip({
 
         {/* Step indicator */}
         <div className="flex items-center gap-2 font-mono text-[11px]">
-          <span className="text-[#9A9B94]">
+          <span className="text-[#64748B]">
             {timelineIndex + 1}/{dates.length}
           </span>
-          <span className="px-1.5 py-0.5 rounded bg-[#141613] border border-[#232520] text-[#E54D2E] font-medium text-[10px]">
+          <span className="px-1.5 py-0.5 rounded bg-[#2563EB]/10 border border-[#2563EB]/20 text-[#2563EB] font-semibold text-[10px]">
             {currentDate}
           </span>
         </div>

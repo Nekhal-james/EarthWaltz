@@ -1,23 +1,11 @@
 import type { Metadata } from 'next';
-import { Inter, Newsreader, JetBrains_Mono } from 'next/font/google';
+import { Plus_Jakarta_Sans } from 'next/font/google';
 import './globals.css';
 
-const inter = Inter({
+const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
   variable: '--font-sans',
-  display: 'swap',
-});
-
-const newsreader = Newsreader({
-  subsets: ['latin'],
-  style: ['normal', 'italic'],
-  variable: '--font-serif',
-  display: 'swap',
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ['latin'],
-  variable: '--font-mono',
   display: 'swap',
 });
 
@@ -30,10 +18,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${newsreader.variable} ${jetbrainsMono.variable}`} style={{ backgroundColor: '#0D0E0C', color: '#F4F3EF' }}>
+    <html lang="en" className={plusJakartaSans.variable} style={{ backgroundColor: '#FFFFFF', color: '#0F172A' }}>
       <body
-        style={{ backgroundColor: '#0D0E0C', color: '#F4F3EF', minHeight: '100vh', margin: 0 }}
-        className="bg-[#0D0E0C] text-[#F4F3EF] font-[family-name:var(--font-sans)] antialiased selection:bg-[#E54D2E]/30 selection:text-[#F4F3EF]"
+        style={{ backgroundColor: '#FFFFFF', color: '#0F172A', minHeight: '100vh', margin: 0 }}
+        className="bg-[#FFFFFF] text-[#0F172A] font-[family-name:var(--font-sans)] antialiased selection:bg-[#2563EB]/20 selection:text-[#0F172A]"
       >
         {children}
       </body>

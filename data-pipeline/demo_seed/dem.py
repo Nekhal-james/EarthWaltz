@@ -158,16 +158,16 @@ def fetch_dem_and_optical_for_bbox(bbox, zoom=10, target_shape=(512, 512)):
         cropped_elev = elev_mosaic
         cropped_opt = opt_mosaic
 
-    # Resize to target_shape
+    # Resize to target_shape with Bicubic resampling to avoid blocky artifacts
     pil_elev = Image.fromarray(cropped_elev)
     resized_elev = np.array(
-        pil_elev.resize((target_shape[1], target_shape[0]), Image.Resampling.BILINEAR),
+        pil_elev.resize((target_shape[1], target_shape[0]), Image.Resampling.BICUBIC),
         dtype=np.float32,
     )
 
     pil_opt = Image.fromarray(np.clip(cropped_opt, 0, 255).astype(np.uint8))
     resized_opt = np.array(
-        pil_opt.resize((target_shape[1], target_shape[0]), Image.Resampling.BILINEAR),
+        pil_opt.resize((target_shape[1], target_shape[0]), Image.Resampling.BICUBIC),
         dtype=np.float32,
     ) / 255.0  # Normalized to [0.0, 1.0]
 
@@ -200,7 +200,8 @@ def fetch_dem_and_optical_for_bbox(bbox, zoom=10, target_shape=(512, 512)):
     optical_water = (b > r * 1.10) & (optical_brightness < 0.38) & (slope_deg < 5.0)
     elevation_water = (resized_elev <= 0.5) & (slope_deg < 3.0)
     real_water_mask = optical_water | elevation_water
-    ocean_mask = (resized_elev <= 0.0) & (real_water_mask | (b > r * 1.05))
+    # Default ocean mask is empty; coastal areas define their shoreline explicitly
+    ocean_mask = np.zeros(target_shape, dtype=bool)
 
     # 2. Real Vegetation / Canopy Biomass Index (V):
     # Normalized green-red difference index (G - R) / (G + R + 0.01)

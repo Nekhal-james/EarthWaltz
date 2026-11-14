@@ -1,19 +1,21 @@
 @import "tailwindcss";
 
 @theme {
-  --font-serif: var(--font-serif), Newsreader, Georgia, Cambria, serif;
-  --font-sans: var(--font-sans), Inter, system-ui, -apple-system, sans-serif;
-  --font-mono: var(--font-mono), JetBrains Mono, monospace;
+  --font-sans: var(--font-sans), 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
 
-  --color-warm-obsidian: #0D0E0C;
-  --color-alabaster: #F4F3EF;
-  --color-stone-ash: #9A9B94;
-  --color-hairline: #232520;
-  --color-vermilion: #E54D2E;
-  --color-emerald: #10B981;
+  --color-white: #FFFFFF;
+  --color-alabaster: #F8FAFC;
+  --color-slate-border: #E2E8F0;
+  --color-ink: #0F172A;
+  --color-slate-muted: #475569;
+  --color-slate-subtle: #64748B;
+  --color-cobalt: #2563EB;
+  --color-cyan: #0EA5E9;
+  --color-amber: #D97706;
+  --color-emerald: #059669;
 }
 
-/* Tabular numbers for all monospace and telemetry readouts */
+/* Tabular numbers for all numbers and telemetry readouts */
 .tabular-nums {
   font-variant-numeric: tabular-nums;
 }
@@ -25,16 +27,16 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #0D0E0C;
+  background: #F8FAFC;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #232520;
-  border-radius: 2px;
+  background: #CBD5E1;
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #3A3D36;
+  background: #94A3B8;
 }
 
 /* Slider handle */
@@ -49,20 +51,21 @@
   width: 100%;
   height: 100vh;
   overflow: hidden;
-  background-color: #0D0E0C;
+  background-color: #0F172A;
 }
 
 /* MapLibre overrides */
 .maplibregl-ctrl-attrib {
-  font-size: 9px !important;
-  background: rgba(9, 10, 15, 0.7) !important;
-  color: #8A94A6 !important;
-  border: 1px solid #222736 !important;
+  font-size: 10px !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+  color: #475569 !important;
+  border: 1px solid #E2E8F0 !important;
   border-radius: 4px !important;
+  backdrop-filter: blur(4px);
 }
 
 .maplibregl-ctrl-attrib a {
-  color: #F59E0B !important;
+  color: #2563EB !important;
 }
 
 html {
@@ -71,6 +74,6 @@ html {
 
 body {
   overflow: hidden;
-  background-color: #090A0F;
-  color: #F1F5F9;
+  background-color: #FFFFFF;
+  color: #0F172A;
 }

@@ -32,8 +32,8 @@ export default function HomePage() {
   const [cursorCoords, setCursorCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [ancillaryVisible, setAncillaryVisible] = useState<string[]>([]);
 
-  // Story Mode Split Curtain Position (0 to 100%, default 50%)
-  const [storyCurtainPos, setStoryCurtainPos] = useState<number>(50);
+  // Story Mode Split Curtain Position (0 to 100%, default 35% so 65% showcases radar swath)
+  const [storyCurtainPos, setStoryCurtainPos] = useState<number>(35);
 
   // Shared Timeline Play state across Story Mode & Instrument Mode
   const [isTimelinePlaying, setIsTimelinePlaying] = useState<boolean>(false);
@@ -125,8 +125,8 @@ export default function HomePage() {
 
   return (
     <div
-      style={{ backgroundColor: '#0D0E0C', color: '#F4F3EF', minHeight: '100vh', width: '100vw' }}
-      className="h-screen w-screen flex flex-col bg-[#0D0E0C] text-[#F4F3EF] overflow-hidden select-none font-sans"
+      style={{ backgroundColor: '#FFFFFF', color: '#0F172A', minHeight: '100vh', width: '100vw' }}
+      className="h-screen w-screen flex flex-col bg-[#FFFFFF] text-[#0F172A] overflow-hidden select-none font-sans"
     >
       {/* GLOBAL COMMAND BAR WITH MODE SWITCHER */}
       <Header
@@ -162,10 +162,12 @@ export default function HomePage() {
             onSelectArea={handleAreaChange}
             activeLayerKey={activeLayerKey}
             onSelectLayer={setActiveLayerKey}
-            onFocusCurtain={() => setStoryCurtainPos(50)}
+            onFocusCurtain={() => setStoryCurtainPos(35)}
             onSwitchToInstrument={() => setMode('instrument')}
             isPlayingSonification={isSonifying}
             onToggleSonification={handleToggleStorySonification}
+            isPlayingTimeline={isTimelinePlaying}
+            onToggleTimeline={() => setIsTimelinePlaying((prev) => !prev)}
           />
         ) : (
           <InspectorSidebar

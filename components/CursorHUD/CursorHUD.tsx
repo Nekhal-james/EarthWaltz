@@ -155,44 +155,44 @@ export default function CursorHUD({
     : `${Math.abs(area.lng).toFixed(4)}° ${area.lng >= 0 ? 'E' : 'W'}`;
 
   return (
-    <div className="absolute top-4 right-4 z-20 pointer-events-auto select-none">
+    <div className="absolute top-4 right-4 z-20 pointer-events-auto select-none font-sans">
       {/* Sleek, Non-Blocking Horizontal Telemetry Pill Bar */}
-      <div className="flex items-center gap-3 bg-[#111210]/95 backdrop-blur-md border border-[#242522] rounded-md px-3.5 py-2 shadow-xl text-xs text-[#9A9B94]">
+      <div className="flex items-center gap-3 bg-[#FFFFFF]/95 backdrop-blur-md border border-[#E2E8F0] rounded-xl px-3.5 py-2 shadow-md text-xs text-[#64748B]">
         {/* Value & Channel */}
         <div className="flex items-baseline gap-1.5">
-          <span className="font-mono text-base font-semibold text-[#F3F2EE] tabular-nums">
+          <span className="font-mono text-base font-bold text-[#0F172A] tabular-nums">
             {typeof displayVal === 'number' ? displayVal.toFixed(2) : displayVal}
           </span>
-          <span className="font-mono text-[11px] text-[#10B981] font-medium">{unit}</span>
-          <span className="text-[#9A9B94] text-[11px] ml-1">
+          <span className="font-mono text-[11px] text-[#2563EB] font-bold">{unit}</span>
+          <span className="text-[#64748B] text-[11px] ml-1">
             ({activeLayer?.label || 'SAR'})
           </span>
         </div>
 
         {/* Hairline Divider */}
-        <div className="h-4 w-px bg-[#242522]" />
+        <div className="h-4 w-px bg-[#E2E8F0]" />
 
         {/* Scattering Mechanism Badge */}
         <div className="flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" />
-          <span className="text-[#F3F2EE] font-medium">{mechanism.label}</span>
+          <span className="w-1.5 h-1.5 rounded-full bg-[#2563EB]" />
+          <span className="text-[#0F172A] font-semibold">{mechanism.label}</span>
         </div>
 
         {/* Hairline Divider */}
-        <div className="h-4 w-px bg-[#242522]" />
+        <div className="h-4 w-px bg-[#E2E8F0]" />
 
         {/* Coordinates */}
-        <div className="font-mono text-[11px] text-[#9A9B94] tabular-nums">
+        <div className="font-mono text-[11px] text-[#64748B] tabular-nums">
           {latStr}, {lngStr}
         </div>
 
         {/* Hairline Divider */}
-        <div className="h-4 w-px bg-[#242522]" />
+        <div className="h-4 w-px bg-[#E2E8F0]" />
 
         {/* Coherence */}
         <div className="flex items-center gap-1 font-mono text-[11px] tabular-nums">
-          <span className="text-[#9A9B94]">γ</span>
-          <span className="text-[#F3F2EE]">
+          <span className="text-[#64748B]">γ</span>
+          <span className="text-[#0F172A] font-semibold">
             {typeof coherenceScore === 'number' ? coherenceScore.toFixed(2) : coherenceScore}
           </span>
         </div>
@@ -200,8 +200,8 @@ export default function CursorHUD({
         {/* Date if available */}
         {timelineDate && (
           <>
-            <div className="h-4 w-px bg-[#242522]" />
-            <div className="font-mono text-[11px] text-[#E2E8F0] tabular-nums">
+            <div className="h-4 w-px bg-[#E2E8F0]" />
+            <div className="font-mono text-[11px] text-[#2563EB] font-semibold tabular-nums">
               {timelineDate}
             </div>
           </>

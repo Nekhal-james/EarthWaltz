@@ -70,20 +70,20 @@ export default function Header({
   }, []);
 
   return (
-    <header className="h-14 w-full bg-[#0D0E0C] border-b border-[#232520] flex items-center justify-between px-4 z-40 select-none">
+    <header className="h-14 w-full bg-[#FFFFFF] border-b border-[#E2E8F0] flex items-center justify-between px-4 z-40 select-none shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
       {/* LEFT: BRAND IDENTITY */}
       <div className="flex items-center gap-3">
-        <div className="w-2.5 h-2.5 rounded-full bg-[#E54D2E]" />
+        <div className="w-2.5 h-2.5 rounded-full bg-[#2563EB]" />
         <div className="flex items-baseline gap-2">
-          <span className="font-serif text-lg tracking-tight text-[#F4F3EF]">EarthWaltz</span>
-          <span className="text-[#232520]">/</span>
-          <span className="text-xs font-mono text-[#9A9B94]">NISAR L+S Observatory</span>
+          <span className="font-sans font-bold text-base tracking-tight text-[#0F172A]">EarthWaltz</span>
+          <span className="text-[#CBD5E1]">/</span>
+          <span className="text-xs font-medium text-[#64748B]">NISAR L+S Observatory</span>
         </div>
       </div>
 
       {/* CENTER: 6 HORIZONTAL STUDY AREA TABS (In Instrument Mode) */}
       {mode === 'instrument' && (
-        <div className="hidden lg:flex items-center bg-[#141613] border border-[#232520] rounded-md p-0.5">
+        <div className="hidden lg:flex items-center bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg p-0.5">
           {areas.map((area) => {
             const isActive = area.id === activeArea.id;
             const label = area.id === 'indonesia' ? 'Sumatra' : area.name.split(',')[0].trim();
@@ -93,8 +93,8 @@ export default function Header({
                 onClick={() => onAreaChange(area)}
                 className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
                   isActive
-                    ? 'bg-[#232520] text-[#F4F3EF] shadow-sm'
-                    : 'text-[#9A9B94] hover:text-[#F4F3EF] hover:bg-[#181916]'
+                    ? 'bg-[#2563EB] text-white shadow-sm'
+                    : 'text-[#64748B] hover:text-[#0F172A] hover:bg-[#F1F5F9]'
                 }`}
               >
                 {label}
@@ -107,25 +107,25 @@ export default function Header({
       {/* RIGHT: TACTILE MODE SWITCHER & WORKBENCH CONTROLS */}
       <div className="flex items-center gap-3 relative" ref={dropdownRef}>
         {/* GLOBAL 2-WAY SEGMENTED MODE SWITCHER */}
-        <div className="flex items-center bg-[#141613] border border-[#232520] rounded-md p-0.5 shadow-inner">
+        <div className="flex items-center bg-[#F1F5F9] border border-[#E2E8F0] rounded-lg p-0.5 shadow-inner">
           <button
             onClick={() => onModeChange('story')}
-            className={`px-3 py-1 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 ${
+            className={`px-3 py-1 text-xs font-semibold rounded-md transition-all flex items-center gap-1.5 ${
               mode === 'story'
-                ? 'bg-[#E54D2E] text-white shadow-sm'
-                : 'text-[#9A9B94] hover:text-[#F4F3EF]'
+                ? 'bg-[#2563EB] text-white shadow-sm'
+                : 'text-[#64748B] hover:text-[#0F172A]'
             }`}
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-white/80" />
+            <span className="w-1.5 h-1.5 rounded-full bg-white/90" />
             <span>Story mode</span>
           </button>
 
           <button
             onClick={() => onModeChange('instrument')}
-            className={`px-3 py-1 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 ${
+            className={`px-3 py-1 text-xs font-semibold rounded-md transition-all flex items-center gap-1.5 ${
               mode === 'instrument'
-                ? 'bg-[#232520] text-[#F4F3EF] shadow-sm'
-                : 'text-[#9A9B94] hover:text-[#F4F3EF]'
+                ? 'bg-[#0F172A] text-white shadow-sm'
+                : 'text-[#64748B] hover:text-[#0F172A]'
             }`}
           >
             <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" />
@@ -141,8 +141,8 @@ export default function Header({
               onClick={onToggleSlider}
               className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors border ${
                 showSlider
-                  ? 'bg-[#232520] text-[#10B981] border-[#10B981]/40'
-                  : 'bg-[#141613] border-[#232520] text-[#9A9B94] hover:text-[#F4F3EF]'
+                  ? 'bg-[#2563EB]/10 text-[#2563EB] border-[#2563EB]/40 font-semibold'
+                  : 'bg-[#F8FAFC] border-[#E2E8F0] text-[#64748B] hover:text-[#0F172A] hover:bg-[#F1F5F9]'
               }`}
             >
               Split compare
@@ -153,11 +153,11 @@ export default function Header({
               onClick={onToggleTour}
               className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors flex items-center gap-1.5 border ${
                 isTourPlaying
-                  ? 'bg-[#10B981]/20 text-[#10B981] border-[#10B981]/50'
-                  : 'bg-[#141613] border-[#232520] text-[#9A9B94] hover:text-[#F4F3EF]'
+                  ? 'bg-[#2563EB]/10 text-[#2563EB] border-[#2563EB]/50 font-semibold'
+                  : 'bg-[#F8FAFC] border-[#E2E8F0] text-[#64748B] hover:text-[#0F172A] hover:bg-[#F1F5F9]'
               }`}
             >
-              {isTourPlaying && <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse" />}
+              {isTourPlaying && <span className="w-1.5 h-1.5 rounded-full bg-[#2563EB] animate-pulse" />}
               <span>{isTourPlaying ? `Tour (${tourIndex + 1}/${tourTotal})` : 'Guided tour'}</span>
             </button>
           </div>
@@ -168,20 +168,20 @@ export default function Header({
           onClick={() => setToolsOpen((p) => !p)}
           className={`flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-md transition-colors border ${
             toolsOpen
-              ? 'bg-[#232520] text-[#F4F3EF] border-[#9A9B94]'
-              : 'bg-[#141613] border-[#232520] text-[#9A9B94] hover:text-[#F4F3EF]'
+              ? 'bg-[#F1F5F9] text-[#0F172A] border-[#CBD5E1]'
+              : 'bg-[#F8FAFC] border-[#E2E8F0] text-[#64748B] hover:text-[#0F172A] hover:bg-[#F1F5F9]'
           }`}
         >
           <span>Tools & export</span>
-          <span className="text-[10px] text-[#9A9B94]">▾</span>
+          <span className="text-[10px] text-[#64748B]">▾</span>
         </button>
 
         {/* Tools / Export Popover Menu */}
         {toolsOpen && (
-          <div className="absolute right-0 top-11 w-72 bg-[#141613] border border-[#232520] rounded-lg shadow-2xl p-3 z-50 flex flex-col gap-3 font-sans">
+          <div className="absolute right-0 top-11 w-72 bg-[#FFFFFF] border border-[#E2E8F0] rounded-xl shadow-xl p-3 z-50 flex flex-col gap-3 font-sans">
             {/* Basemap Selection */}
             <div>
-              <label className="text-[11px] font-medium text-[#9A9B94] block mb-1">
+              <label className="text-[11px] font-semibold text-[#64748B] block mb-1">
                 Basemap layer
               </label>
               <div className="grid grid-cols-2 gap-1">
@@ -191,8 +191,8 @@ export default function Header({
                     onClick={() => onBasemapChange(key as BasemapStyle)}
                     className={`px-2 py-1 text-xs rounded text-left transition-colors border ${
                       basemap === key
-                        ? 'bg-[#232520] text-[#F4F3EF] border-[#E54D2E]/60'
-                        : 'bg-[#0D0E0C] border-[#232520] text-[#9A9B94] hover:text-[#F4F3EF]'
+                        ? 'bg-[#2563EB] text-white border-[#2563EB] font-medium'
+                        : 'bg-[#F8FAFC] border-[#E2E8F0] text-[#475569] hover:text-[#0F172A] hover:bg-[#F1F5F9]'
                     }`}
                   >
                     {item.label}
@@ -203,9 +203,9 @@ export default function Header({
 
             {/* Swath Opacity Slider */}
             <div>
-              <div className="flex items-center justify-between text-[11px] font-medium text-[#9A9B94] mb-1">
+              <div className="flex items-center justify-between text-[11px] font-semibold text-[#64748B] mb-1">
                 <span>SAR swath opacity</span>
-                <span className="font-mono text-[#F4F3EF]">{Math.round(opacity * 100)}%</span>
+                <span className="font-mono text-[#0F172A]">{Math.round(opacity * 100)}%</span>
               </div>
               <input
                 type="range"
@@ -214,21 +214,21 @@ export default function Header({
                 step="0.05"
                 value={opacity}
                 onChange={(e) => onOpacityChange(parseFloat(e.target.value))}
-                className="w-full h-1 bg-[#232520] rounded-lg appearance-none cursor-pointer accent-[#E54D2E]"
+                className="w-full h-1 bg-[#E2E8F0] rounded-lg appearance-none cursor-pointer accent-[#2563EB]"
               />
             </div>
 
-            <div className="border-t border-[#232520] pt-2 flex flex-col gap-1.5">
+            <div className="border-t border-[#E2E8F0] pt-2 flex flex-col gap-1.5">
               {/* Export High-Res PNG */}
               <button
                 onClick={() => {
                   onExportSnapshot?.();
                   setToolsOpen(false);
                 }}
-                className="w-full px-2.5 py-1.5 text-xs text-left font-medium rounded bg-[#0D0E0C] hover:bg-[#181916] border border-[#232520] text-[#F4F3EF] flex items-center justify-between transition-colors"
+                className="w-full px-2.5 py-1.5 text-xs text-left font-medium rounded bg-[#F8FAFC] hover:bg-[#F1F5F9] border border-[#E2E8F0] text-[#0F172A] flex items-center justify-between transition-colors"
               >
                 <span>Export annotated PNG snapshot</span>
-                <span className="text-[10px] font-mono text-[#9A9B94]">PNG</span>
+                <span className="text-[10px] font-mono text-[#64748B]">PNG</span>
               </button>
 
               {/* Radar Physics Explainer */}
@@ -237,10 +237,10 @@ export default function Header({
                   onToggleExplainer();
                   setToolsOpen(false);
                 }}
-                className="w-full px-2.5 py-1.5 text-xs text-left font-medium rounded bg-[#0D0E0C] hover:bg-[#181916] border border-[#232520] text-[#F4F3EF] flex items-center justify-between transition-colors"
+                className="w-full px-2.5 py-1.5 text-xs text-left font-medium rounded bg-[#F8FAFC] hover:bg-[#F1F5F9] border border-[#E2E8F0] text-[#0F172A] flex items-center justify-between transition-colors"
               >
                 <span>Radar physics reference</span>
-                <span className="text-[10px] font-mono text-[#9A9B94]">Doc</span>
+                <span className="text-[10px] font-mono text-[#64748B]">Doc</span>
               </button>
 
               {/* NASA / ISRO Resources & STAC Search */}
@@ -249,10 +249,10 @@ export default function Header({
                   onToggleResources();
                   setToolsOpen(false);
                 }}
-                className="w-full px-2.5 py-1.5 text-xs text-left font-medium rounded bg-[#0D0E0C] hover:bg-[#181916] border border-[#232520] text-[#F4F3EF] flex items-center justify-between transition-colors"
+                className="w-full px-2.5 py-1.5 text-xs text-left font-medium rounded bg-[#F8FAFC] hover:bg-[#F1F5F9] border border-[#E2E8F0] text-[#0F172A] flex items-center justify-between transition-colors"
               >
                 <span>NASA CMR & ASF STAC query</span>
-                <span className="text-[10px] font-mono text-[#10B981]">STAC</span>
+                <span className="text-[10px] font-mono text-[#2563EB] font-semibold">STAC</span>
               </button>
             </div>
           </div>

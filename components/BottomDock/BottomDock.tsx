@@ -128,13 +128,13 @@ export default function BottomDock({
   };
 
   return (
-    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[94vw] max-w-4xl h-12 bg-[#111210]/95 backdrop-blur-md border border-[#242522] rounded-md shadow-2xl px-3.5 flex items-center justify-between gap-4 z-20 pointer-events-auto select-none">
+    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[94vw] max-w-4xl h-12 bg-[#FFFFFF]/95 backdrop-blur-md border border-[#E2E8F0] rounded-xl shadow-lg px-3.5 flex items-center justify-between gap-4 z-20 pointer-events-auto select-none font-sans">
       {/* LEFT SECTION: TIMELINE ANIMATION CONTROLS */}
       <div className="flex items-center gap-2 shrink-0">
         {/* Step Prev */}
         <button
           onClick={handleStepPrev}
-          className="w-6 h-6 rounded bg-[#181916] border border-[#242522] hover:border-[#10B981] flex items-center justify-center text-[#9A9B94] hover:text-[#F3F2EE] transition-colors"
+          className="w-6 h-6 rounded bg-[#F8FAFC] border border-[#E2E8F0] hover:border-[#2563EB] flex items-center justify-center text-[#64748B] hover:text-[#0F172A] transition-colors"
           title="Previous acquisition date"
         >
           <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -147,8 +147,8 @@ export default function BottomDock({
           onClick={togglePlay}
           className={`w-6 h-6 rounded flex items-center justify-center transition-colors border ${
             playing
-              ? 'bg-[#10B981]/20 text-[#10B981] border-[#10B981]'
-              : 'bg-[#181916] text-[#F3F2EE] border-[#242522] hover:border-[#10B981]'
+              ? 'bg-[#2563EB] text-white border-[#2563EB]'
+              : 'bg-[#F8FAFC] text-[#0F172A] border-[#E2E8F0] hover:border-[#2563EB]'
           }`}
           title={playing ? 'Pause timeline animation' : 'Play timeline animation'}
         >
@@ -167,7 +167,7 @@ export default function BottomDock({
         {/* Step Next */}
         <button
           onClick={handleStepNext}
-          className="w-6 h-6 rounded bg-[#181916] border border-[#242522] hover:border-[#10B981] flex items-center justify-center text-[#9A9B94] hover:text-[#F3F2EE] transition-colors"
+          className="w-6 h-6 rounded bg-[#F8FAFC] border border-[#E2E8F0] hover:border-[#2563EB] flex items-center justify-center text-[#64748B] hover:text-[#0F172A] transition-colors"
           title="Next acquisition date"
         >
           <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -176,9 +176,9 @@ export default function BottomDock({
         </button>
 
         {/* Current Date Badge */}
-        <div className="bg-[#181916] border border-[#242522] rounded px-2 py-0.5 flex items-center gap-1.5">
-          {playing && <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse" />}
-          <span className="font-mono text-xs font-medium text-[#10B981] tabular-nums">
+        <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded px-2 py-0.5 flex items-center gap-1.5">
+          {playing && <span className="w-1.5 h-1.5 rounded-full bg-[#2563EB] animate-pulse" />}
+          <span className="font-mono text-xs font-semibold text-[#2563EB] tabular-nums">
             {currentDate}
           </span>
         </div>
@@ -186,7 +186,7 @@ export default function BottomDock({
         {/* Speed Multiplier */}
         <button
           onClick={cycleSpeed}
-          className="font-mono text-[10px] text-[#9A9B94] hover:text-[#F3F2EE] bg-[#181916] border border-[#242522] rounded px-1.5 py-0.5 tabular-nums transition-colors"
+          className="font-mono text-[10px] text-[#64748B] hover:text-[#0F172A] bg-[#F8FAFC] border border-[#E2E8F0] rounded px-1.5 py-0.5 tabular-nums transition-colors"
           title="Playback speed multiplier"
         >
           {speed}x
@@ -196,7 +196,7 @@ export default function BottomDock({
       {/* CENTER SECTION: SCRUBBER TRACK */}
       <div className="flex-1 max-w-xs flex flex-col justify-center gap-0.5">
         <div
-          className="relative h-1.5 bg-[#181916] border border-[#242522] rounded cursor-pointer group"
+          className="relative h-1.5 bg-[#E2E8F0] rounded cursor-pointer group"
           onClick={(e) => {
             if (!dates.length) return;
             const rect = e.currentTarget.getBoundingClientRect();
@@ -205,16 +205,16 @@ export default function BottomDock({
           }}
         >
           <div
-            className="absolute top-0 bottom-0 left-0 bg-[#10B981]/50 rounded transition-all"
+            className="absolute top-0 bottom-0 left-0 bg-[#2563EB]/60 rounded transition-all"
             style={{ width: `${progress}%` }}
           />
           <div
-            className="absolute top-1/2 -translate-y-1/2 w-2 h-3 bg-[#10B981] rounded-sm -translate-x-1/2 shadow transition-transform group-hover:scale-125"
+            className="absolute top-1/2 -translate-y-1/2 w-2 h-3 bg-[#2563EB] rounded-sm -translate-x-1/2 shadow transition-transform group-hover:scale-125"
             style={{ left: `${progress}%` }}
           />
         </div>
         {dates.length > 0 && (
-          <div className="flex justify-between font-mono text-[9px] text-[#9A9B94] tabular-nums">
+          <div className="flex justify-between font-mono text-[9px] text-[#64748B] tabular-nums">
             <span>{dates[0]}</span>
             <span>Step {currentIndex + 1}/{dates.length}</span>
             <span>{dates[dates.length - 1]}</span>
@@ -223,19 +223,19 @@ export default function BottomDock({
       </div>
 
       {/* HAIRLINE VERTICAL DIVIDER */}
-      <div className="h-6 w-px bg-[#242522] shrink-0" />
+      <div className="h-6 w-px bg-[#E2E8F0] shrink-0" />
 
       {/* RIGHT SECTION: SLEEK COMPACT COLORBAR LEGEND */}
       <div className="flex flex-col justify-center gap-0.5 shrink-0 min-w-[210px]">
         <div className="flex items-center justify-between text-[11px]">
-          <span className="font-medium text-[#F3F2EE] truncate">{legendConfig.title}</span>
-          <span className="font-mono text-[10px] text-[#10B981] font-medium">{unit}</span>
+          <span className="font-semibold text-[#0F172A] truncate">{legendConfig.title}</span>
+          <span className="font-mono text-[10px] text-[#2563EB] font-semibold">{unit}</span>
         </div>
         <div
-          className="h-1.5 w-full rounded-sm border border-[#242522]"
+          className="h-1.5 w-full rounded-sm border border-black/10"
           style={{ background: legendConfig.gradient }}
         />
-        <div className="flex justify-between font-mono text-[8px] text-[#9A9B94] tabular-nums px-0.5">
+        <div className="flex justify-between font-mono text-[8px] text-[#64748B] tabular-nums px-0.5">
           {legendConfig.ticks.map((t, i) => (
             <span key={i}>{t}</span>
           ))}
