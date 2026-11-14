@@ -74,3 +74,5 @@ export interface TimeSeriesData {
 export type Polarization = 'HH' | 'HV' | 'VV' | 'InSAR Phase' | 'Coherence' | 'Offset Tracking';
 
 export type BasemapStyle = 'dark-matter' | 'gibs-truecolor' | 'esri-satellite' | 'positron';
+
+export type AppMode = 'story' | 'instrument';

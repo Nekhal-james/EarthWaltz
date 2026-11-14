@@ -117,7 +117,7 @@ export default function CursorHUD({
         };
       }
       return {
-        label: 'Surface / Low-Biomass Scatter',
+        label: 'Low-Biomass / Agricultural Surface Scatter',
         sub: 'Soil roughness & agricultural crop return',
       };
     }

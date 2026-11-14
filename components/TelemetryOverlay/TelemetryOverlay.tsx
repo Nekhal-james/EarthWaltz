@@ -128,7 +128,7 @@ export default function TelemetryOverlay({ activeLayer, area, cursorCoords }: Te
         };
       }
       return {
-        label: 'Surface / Low-Biomass Agricultural Scatter',
+        label: 'Low-Biomass / Agricultural Surface Scatter',
         sub: 'Moderate Crop & Soil Roughness Scatter',
         color: 'bg-[#181916] text-[#E2E8F0] border-[#242522]',
       };

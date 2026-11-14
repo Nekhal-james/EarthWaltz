@@ -3,7 +3,13 @@
 import dynamic from 'next/dynamic';
 import { useState, useCallback, useEffect } from 'react';
 import { useStudyAreas } from '@/hooks/useStudyAreas';
-import type { StudyArea, BasemapStyle } from '@/types';
+import { useSonification } from '@/hooks/useSonification';
+import { useTimeSeries } from '@/hooks/useTimeSeries';
+import type { StudyArea, BasemapStyle, AppMode } from '@/types';
+
+import StoryJournal from '@/components/StoryMode/StoryJournal';
+import StorySplitCurtain from '@/components/StoryMode/StorySplitCurtain';
+import StoryStatusStrip from '@/components/StoryMode/StoryStatusStrip';
 
 const GlobeWrapper = dynamic(() => import('@/components/Globe/GlobeWrapper'), { ssr: false });
 const Header = dynamic(() => import('@/components/Header/Header'), { ssr: false });
@@ -16,14 +22,25 @@ const MissionResourcesModal = dynamic(() => import('@/components/MissionResource
 
 export default function HomePage() {
   const { areas, activeArea, setActiveArea, loading } = useStudyAreas();
+
+  // Mode: 'story' (Editorial) is DEFAULT ON LOAD, 'instrument' is Advanced Workbench
+  const [mode, setMode] = useState<AppMode>('story');
+
   const [activeLayerKey, setActiveLayerKey] = useState<string>('hh');
   const [basemap, setBasemap] = useState<BasemapStyle>('esri-satellite');
   const [sarOpacity, setSarOpacity] = useState<number>(0.85);
   const [cursorCoords, setCursorCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [ancillaryVisible, setAncillaryVisible] = useState<string[]>([]);
 
-  // Timeline state synced with BottomDock and CursorHUD
-  const [timelineDate, setTimelineDate] = useState<string>('');
+  // Story Mode Split Curtain Position (0 to 100%, default 50%)
+  const [storyCurtainPos, setStoryCurtainPos] = useState<number>(50);
+
+  // Audio Sonification for Story Mode & Workbench
+  const { play: playAudio, stop: stopAudio, isPlaying: isSonifying } = useSonification();
+  const { data: timeseriesData } = useTimeSeries(activeArea?.timeseries || null);
+
+  // Timeline state synced with BottomDock, StoryStatusStrip, and CursorHUD
+  const [timelineDate, setTimelineDate] = useState<string>('2025-01-15');
   const [timelineDateIndex, setTimelineDateIndex] = useState<number>(0);
   const [selectedBand, setSelectedBand] = useState<string>('L-Band');
 
@@ -41,7 +58,7 @@ export default function HomePage() {
   const [isTourPlaying, setIsTourPlaying] = useState(false);
   const [tourIndex, setTourIndex] = useState(0);
 
-  // 1-Click Study Area Switcher: Auto-selects phenomenon signature layer
+  // 1-Click Study Area Switcher: Auto-selects signature phenomenon layer
   const handleAreaChange = useCallback(
     (area: StudyArea) => {
       setActiveArea(area);
@@ -85,23 +102,38 @@ export default function HomePage() {
     setTimeout(() => setSnapshotToast(null), 4000);
   }, []);
 
+  // Story Mode Sonification toggle handler
+  const handleToggleStorySonification = useCallback(() => {
+    if (isSonifying) {
+      stopAudio();
+    } else {
+      const hhSeries = timeseriesData?.series?.hh_mean || [-12, -11, -9, -7, -6, -8, -10, -11, -12];
+      const cohSeries = timeseriesData?.series?.coherence_mean || [0.7, 0.7, 0.65, 0.6, 0.55, 0.6, 0.68];
+      const dbVal = hhSeries[timelineDateIndex] ?? hhSeries[0];
+      const cohVal = cohSeries[timelineDateIndex] ?? cohSeries[0];
+      playAudio(dbVal, cohVal);
+    }
+  }, [isSonifying, stopAudio, playAudio, timeseriesData, timelineDateIndex]);
+
   const activeLayer = activeArea.layers[activeLayerKey] || Object.values(activeArea.layers)[0];
 
   if (loading) {
     return (
-      <div className="h-screen w-screen flex items-center justify-center bg-[#111210]">
+      <div className="h-screen w-screen flex items-center justify-center bg-[#0D0E0C]">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-[#242522] border-t-[#10B981] rounded-full animate-spin" />
-          <p className="text-xs text-[#9A9B94]">Initializing EarthWaltz Observatory...</p>
+          <div className="w-8 h-8 border-2 border-[#232520] border-t-[#E54D2E] rounded-full animate-spin" />
+          <p className="text-xs text-[#9A9B94] font-mono">Initializing EarthWaltz Observatory...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="h-screen w-screen flex flex-col bg-[#111210] text-[#F3F2EE] overflow-hidden select-none">
-      {/* ZONE 1: TOP COMMAND BAR */}
+    <div className="h-screen w-screen flex flex-col bg-[#0D0E0C] text-[#F4F3EF] overflow-hidden select-none font-sans">
+      {/* GLOBAL COMMAND BAR WITH MODE SWITCHER */}
       <Header
+        mode={mode}
+        onModeChange={setMode}
         areas={areas}
         activeArea={activeArea}
         onAreaChange={handleAreaChange}
@@ -122,25 +154,40 @@ export default function HomePage() {
         onOpacityChange={setSarOpacity}
       />
 
-      {/* WORKSPACE: DOCKED LEFT INSPECTOR + MAP CANVAS */}
+      {/* DUAL-MODE WORKSPACE (Shared persistent MapLibre Canvas) */}
       <div className="relative flex-1 flex w-full h-[calc(100vh-3.5rem)] overflow-hidden">
-        {/* ZONE 2: LEFT DOCKED INSPECTOR SIDEBAR */}
-        <InspectorSidebar
-          area={activeArea}
-          activeLayerKey={activeLayerKey}
-          onSelectLayer={setActiveLayerKey}
-          selectedBand={selectedBand}
-          onSelectBand={setSelectedBand}
-          ancillaryVisible={ancillaryVisible}
-          onToggleAncillary={(layerId) =>
-            setAncillaryVisible((prev) =>
-              prev.includes(layerId) ? prev.filter((l) => l !== layerId) : [...prev, layerId]
-            )
-          }
-        />
+        {/* LEFT COLUMN: STORY JOURNAL vs INSTRUMENT SIDEBAR */}
+        {mode === 'story' ? (
+          <StoryJournal
+            areas={areas}
+            activeArea={activeArea}
+            onSelectArea={handleAreaChange}
+            activeLayerKey={activeLayerKey}
+            onSelectLayer={setActiveLayerKey}
+            onFocusCurtain={() => setStoryCurtainPos(50)}
+            onSwitchToInstrument={() => setMode('instrument')}
+            isPlayingSonification={isSonifying}
+            onToggleSonification={handleToggleStorySonification}
+          />
+        ) : (
+          <InspectorSidebar
+            area={activeArea}
+            activeLayerKey={activeLayerKey}
+            onSelectLayer={setActiveLayerKey}
+            selectedBand={selectedBand}
+            onSelectBand={setSelectedBand}
+            ancillaryVisible={ancillaryVisible}
+            onToggleAncillary={(layerId) =>
+              setAncillaryVisible((prev) =>
+                prev.includes(layerId) ? prev.filter((l) => l !== layerId) : [...prev, layerId]
+              )
+            }
+          />
+        )}
 
-        {/* MAP CANVAS VIEWPORT */}
+        {/* RIGHT COLUMN: SHARED MAP VIEWPORT */}
         <div className="relative flex-1 h-full overflow-hidden">
+          {/* PERSISTENT MAPLIBRE GL JS INSTANCE (0ms reload on mode switch) */}
           <GlobeWrapper
             areas={areas}
             activeArea={activeArea}
@@ -156,25 +203,48 @@ export default function HomePage() {
             selectedBand={selectedBand}
           />
 
-          {/* ZONE 4: COMPACT CURSOR HUD (Top-Right of Map) */}
-          <CursorHUD
-            activeLayer={activeLayer}
-            area={activeArea}
-            cursorCoords={cursorCoords}
-            timelineDate={timelineDate}
-            timelineIndex={timelineDateIndex}
-          />
+          {/* STORY MODE OVERLAYS: BEFORE/AFTER SPLIT CURTAIN & STATUS STRIP */}
+          {mode === 'story' && (
+            <>
+              <StorySplitCurtain
+                opticalCloudyPath={`/data/${activeArea.optical_cloudy}`}
+                position={storyCurtainPos}
+                onPositionChange={setStoryCurtainPos}
+              />
 
-          {/* ZONE 3: BOTTOM HUD DOCK (Colorbar Legend + Animated Timeline Scrubber) */}
-          <BottomDock
-            activeLayer={activeLayer}
-            timeseriesPath={activeArea.timeseries}
-            onDateChange={handleTimelineDateChange}
-          />
+              <StoryStatusStrip
+                activeLayer={activeLayer}
+                area={activeArea}
+                cursorCoords={cursorCoords}
+                timeseriesPath={activeArea.timeseries}
+                timelineIndex={timelineDateIndex}
+                onTimelineChange={handleTimelineDateChange}
+              />
+            </>
+          )}
+
+          {/* INSTRUMENT MODE OVERLAYS: CURSOR HUD & BOTTOM DOCK */}
+          {mode === 'instrument' && (
+            <>
+              <CursorHUD
+                activeLayer={activeLayer}
+                area={activeArea}
+                cursorCoords={cursorCoords}
+                timelineDate={timelineDate}
+                timelineIndex={timelineDateIndex}
+              />
+
+              <BottomDock
+                activeLayer={activeLayer}
+                timeseriesPath={activeArea.timeseries}
+                onDateChange={handleTimelineDateChange}
+              />
+            </>
+          )}
 
           {/* SNAPSHOT TOAST NOTIFICATION */}
           {snapshotToast && (
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-[#181916] border border-[#10B981] rounded-md px-4 py-2 text-xs font-mono text-[#F3F2EE] shadow-2xl z-50 flex items-center gap-2">
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-[#141613] border border-[#10B981] rounded-md px-4 py-2 text-xs font-mono text-[#F4F3EF] shadow-2xl z-50 flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-[#10B981]" />
               <span>Snapshot exported: {snapshotToast}</span>
             </div>
@@ -182,7 +252,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* OVERLAY MODALS */}
+      {/* OVERLAY MODALS (Available across both modes) */}
       {showSlider && (
         <SplitSlider
           sarImagePath={activeLayer ? `/data/${activeLayer.image}` : null}

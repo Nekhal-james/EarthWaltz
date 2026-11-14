@@ -732,7 +732,16 @@ export default function Globe({
 
     mapRef.current = map;
 
+    // Observe container size changes (e.g. switching between Story Mode & Instrument Mode)
+    const resizeObserver = new ResizeObserver(() => {
+      map.resize();
+    });
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
+
     return () => {
+      resizeObserver.disconnect();
       map.remove();
       mapRef.current = null;
       isLoadedRef.current = false;

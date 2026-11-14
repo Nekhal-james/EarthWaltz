@@ -1,12 +1,16 @@
 @import "tailwindcss";
 
 @theme {
-  --color-panel-bg: #090A0F;
-  --color-control-surface: #12151E;
-  --color-hairline: #222736;
-  --color-text-primary: #F1F5F9;
-  --color-text-secondary: #8A94A6;
-  --color-accent: #F59E0B;
+  --font-serif: var(--font-serif), Newsreader, Georgia, Cambria, serif;
+  --font-sans: var(--font-sans), Inter, system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-mono), JetBrains Mono, monospace;
+
+  --color-warm-obsidian: #0D0E0C;
+  --color-alabaster: #F4F3EF;
+  --color-stone-ash: #9A9B94;
+  --color-hairline: #232520;
+  --color-vermilion: #E54D2E;
+  --color-emerald: #10B981;
 }
 
 /* Tabular numbers for all monospace and telemetry readouts */
@@ -21,16 +25,16 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #090A0F;
+  background: #0D0E0C;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #222736;
+  background: #232520;
   border-radius: 2px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #374151;
+  background: #3A3D36;
 }
 
 /* Slider handle */
@@ -45,7 +49,7 @@
   width: 100%;
   height: 100vh;
   overflow: hidden;
-  background-color: #090A0F;
+  background-color: #0D0E0C;
 }
 
 /* MapLibre overrides */
