@@ -25,32 +25,31 @@ export default function WaltzTour({ areas, onFlyTo }: WaltzTourProps) {
 
   const currentArea = tourAreas[currentIndex] || tourAreas[0];
 
+  // 8-second dwell interval incrementing step index
   useEffect(() => {
     if (!isPlaying || tourAreas.length === 0) return;
 
     const interval = setInterval(() => {
-      setCurrentIndex((prevIndex) => {
-        const nextIndex = (prevIndex + 1) % tourAreas.length;
-        const nextArea = tourAreas[nextIndex];
-        if (nextArea) {
-          setTimeout(() => {
-            onFlyToRef.current?.(nextArea);
-          }, 0);
-        }
-        return nextIndex;
-      });
-    }, 8000); // 8-second dwell per stop
+      setCurrentIndex((prevIndex) => (prevIndex + 1) % tourAreas.length);
+    }, 8000);
 
     return () => clearInterval(interval);
-  }, [isPlaying, tourAreas]);
+  }, [isPlaying, tourAreas.length]);
+
+  // Safely trigger onFlyTo in a separate effect (never inside a setState callback or render)
+  useEffect(() => {
+    if (!isPlaying || tourAreas.length === 0) return;
+    const targetArea = tourAreas[currentIndex];
+    if (targetArea) {
+      onFlyToRef.current?.(targetArea);
+    }
+  }, [currentIndex, isPlaying, tourAreas]);
 
   const handleStart = () => {
     setIsPlaying(true);
     setCurrentIndex(0);
     if (tourAreas[0]) {
-      setTimeout(() => {
-        onFlyToRef.current?.(tourAreas[0]);
-      }, 0);
+      onFlyToRef.current?.(tourAreas[0]);
     }
   };
 
@@ -61,58 +60,48 @@ export default function WaltzTour({ areas, onFlyTo }: WaltzTourProps) {
   const handleNext = () => {
     const next = (currentIndex + 1) % tourAreas.length;
     setCurrentIndex(next);
-    if (tourAreas[next]) {
-      setTimeout(() => {
-        onFlyToRef.current?.(tourAreas[next]);
-      }, 0);
-    }
   };
 
   const handlePrev = () => {
     const prev = (currentIndex - 1 + tourAreas.length) % tourAreas.length;
     setCurrentIndex(prev);
-    if (tourAreas[prev]) {
-      setTimeout(() => {
-        onFlyToRef.current?.(tourAreas[prev]);
-      }, 0);
-    }
   };
 
   if (!isPlaying) {
     return (
       <button
         onClick={handleStart}
-        className="flex items-center justify-center gap-2 px-3 py-2.5 bg-gradient-to-r from-[#d946ef] to-[#f59e0b] hover:from-[#c026d3] hover:to-[#d97706] text-white text-xs font-bold rounded-xl shadow-lg shadow-[#d946ef]/20 transition-all transform hover:scale-105 active:scale-95"
+        className="flex items-center justify-center gap-2 px-3 py-2 bg-[#12151E] hover:bg-[#171B26] border border-[#222736] text-[#F1F5F9] text-xs font-medium rounded transition-colors"
       >
-        <span className="text-sm animate-spin" style={{ animationDuration: '6s' }}>🌍</span>
-        <span>Auto-Play Waltz Tour</span>
+        <span className="w-2 h-2 rounded-full bg-[#F59E0B]" />
+        <span>Start Guided Tour</span>
       </button>
     );
   }
 
   return (
-    <div className="bg-[#111827]/95 backdrop-blur-md border border-[#f59e0b]/40 rounded-xl p-3 shadow-2xl w-72 animate-in fade-in slide-in-from-bottom duration-300">
+    <div className="bg-[#090A0F]/95 backdrop-blur-md border border-[#222736] rounded p-3 shadow-2xl w-72">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-1.5">
-          <span className="text-xs">🎶</span>
-          <span className="text-xs font-bold text-[#f59e0b]">Global Waltz Tour</span>
+          <span className="w-2 h-2 rounded-full bg-[#F59E0B] animate-pulse" />
+          <span className="text-xs font-semibold text-[#F1F5F9]">Guided Tour</span>
         </div>
-        <span className="text-[10px] font-mono text-gray-400">
+        <span className="text-[10px] font-mono text-[#8A94A6]">
           Stop {currentIndex + 1} of {tourAreas.length}
         </span>
       </div>
 
-      <div className="bg-[#0a0e1a]/80 rounded-lg p-2.5 mb-2.5 border border-[#1f2937]">
+      <div className="bg-[#12151E] rounded p-2.5 mb-2.5 border border-[#222736]">
         <div className="flex items-center gap-1.5 mb-1">
-          <p className="text-xs font-bold text-white truncate">{currentArea?.name}</p>
+          <p className="text-xs font-semibold text-[#F1F5F9] truncate">{currentArea?.name}</p>
           {currentArea?.hometown && (
-            <span className="text-[9px] bg-[#f59e0b]/20 text-[#f59e0b] border border-[#f59e0b]/40 rounded px-1 font-semibold">
+            <span className="text-[9px] bg-[#12151E] text-[#F59E0B] border border-[#F59E0B]/40 rounded px-1 font-mono">
               Hometown
             </span>
           )}
         </div>
-        <p className="text-[11px] text-[#06b6d4] font-medium mb-1.5">{currentArea?.phenomenon}</p>
-        <p className="text-[10px] text-gray-300 line-clamp-3 leading-relaxed">
+        <p className="text-[11px] text-[#F59E0B] font-medium mb-1">{currentArea?.phenomenon}</p>
+        <p className="text-[10px] text-[#8A94A6] line-clamp-3 leading-relaxed">
           {currentArea?.narrative}
         </p>
       </div>
@@ -120,23 +109,23 @@ export default function WaltzTour({ areas, onFlyTo }: WaltzTourProps) {
       <div className="flex items-center justify-between gap-1">
         <button
           onClick={handlePrev}
-          className="px-2 py-1 bg-[#1f2937] hover:bg-[#374151] text-gray-200 text-[11px] rounded transition"
+          className="px-2 py-1 bg-[#12151E] hover:bg-[#171B26] border border-[#222736] text-[#8A94A6] hover:text-[#F1F5F9] text-[11px] rounded transition"
           title="Previous stop"
         >
-          ⏮ Prev
+          Previous
         </button>
         <button
           onClick={handleStop}
-          className="px-2.5 py-1 bg-red-900/60 hover:bg-red-800 text-red-200 text-[11px] rounded font-medium transition"
+          className="px-2.5 py-1 bg-red-950/40 hover:bg-red-900/60 border border-red-800/40 text-red-200 text-[11px] rounded font-medium transition"
         >
-          ⏹ Exit
+          Exit Tour
         </button>
         <button
           onClick={handleNext}
-          className="px-2 py-1 bg-[#1f2937] hover:bg-[#374151] text-gray-200 text-[11px] rounded transition"
+          className="px-2 py-1 bg-[#12151E] hover:bg-[#171B26] border border-[#222736] text-[#8A94A6] hover:text-[#F1F5F9] text-[11px] rounded transition"
           title="Next stop"
         >
-          Next ⏭
+          Next
         </button>
       </div>
     </div>

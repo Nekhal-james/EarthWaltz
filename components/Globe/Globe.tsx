@@ -5,47 +5,7 @@ import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { StudyArea, LayerInfo, BasemapStyle } from '@/types';
 
-// NASA VIIRS SNPP True-Color full historical composite (zero orbital gaps/zebra stripes)
-const GIBS_TRUECOLOR_STYLE: maplibregl.StyleSpecification = {
-  version: 8,
-  sources: {
-    'gibs-viirs': {
-      type: 'raster',
-      tiles: [
-        'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_SNPP_CorrectedReflectance_TrueColor/default/2025-09-15/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg',
-      ],
-      tileSize: 256,
-      attribution: '© NASA EOSDIS GIBS',
-      maxzoom: 9,
-    },
-    'carto-labels': {
-      type: 'raster',
-      tiles: ['https://basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}.png'],
-      tileSize: 256,
-      attribution: '© CartoDB',
-      maxzoom: 20,
-    },
-  },
-  layers: [
-    {
-      id: 'gibs-viirs-layer',
-      type: 'raster',
-      source: 'gibs-viirs',
-      minzoom: 0,
-      maxzoom: 22,
-    },
-    {
-      id: 'carto-labels-layer',
-      type: 'raster',
-      source: 'carto-labels',
-      minzoom: 0,
-      maxzoom: 22,
-      paint: { 'raster-opacity': 0.8 },
-    },
-  ],
-};
-
-// Esri World Imagery blended with dark reference labels (crisp, zero orbital gaps)
+// Esri World Imagery + Esri Reference Boundaries (Zero watermark, zero API key required)
 const ESRI_SATELLITE_STYLE: maplibregl.StyleSpecification = {
   version: 8,
   sources: {
@@ -58,12 +18,14 @@ const ESRI_SATELLITE_STYLE: maplibregl.StyleSpecification = {
       attribution: '© Esri, Maxar, Earthstar Geographics',
       maxzoom: 19,
     },
-    'carto-labels': {
+    'esri-reference': {
       type: 'raster',
-      tiles: ['https://basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}.png'],
+      tiles: [
+        'https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+      ],
       tileSize: 256,
-      attribution: '© CartoDB',
-      maxzoom: 20,
+      attribution: '© Esri',
+      maxzoom: 19,
     },
   },
   layers: [
@@ -75,9 +37,51 @@ const ESRI_SATELLITE_STYLE: maplibregl.StyleSpecification = {
       maxzoom: 22,
     },
     {
-      id: 'carto-labels-layer',
+      id: 'esri-reference-layer',
       type: 'raster',
-      source: 'carto-labels',
+      source: 'esri-reference',
+      minzoom: 0,
+      maxzoom: 22,
+      paint: { 'raster-opacity': 0.85 },
+    },
+  ],
+};
+
+// Esri Dark Gray Canvas Base + Reference (Zero watermark, zero API key required)
+const ESRI_DARK_STYLE: maplibregl.StyleSpecification = {
+  version: 8,
+  sources: {
+    'esri-dark-base': {
+      type: 'raster',
+      tiles: [
+        'https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+      ],
+      tileSize: 256,
+      attribution: '© Esri, HERE, Garmin',
+      maxzoom: 16,
+    },
+    'esri-dark-reference': {
+      type: 'raster',
+      tiles: [
+        'https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
+      ],
+      tileSize: 256,
+      attribution: '© Esri',
+      maxzoom: 16,
+    },
+  },
+  layers: [
+    {
+      id: 'esri-dark-base-layer',
+      type: 'raster',
+      source: 'esri-dark-base',
+      minzoom: 0,
+      maxzoom: 22,
+    },
+    {
+      id: 'esri-dark-ref-layer',
+      type: 'raster',
+      source: 'esri-dark-reference',
       minzoom: 0,
       maxzoom: 22,
       paint: { 'raster-opacity': 0.8 },
@@ -85,13 +89,97 @@ const ESRI_SATELLITE_STYLE: maplibregl.StyleSpecification = {
   ],
 };
 
-export const BASEMAPS: Record<BasemapStyle, { style: string | maplibregl.StyleSpecification; label: string }> = {
+// NASA VIIRS SNPP True-Color composite + Esri Reference (Zero orbital zebra stripes)
+const GIBS_TRUECOLOR_STYLE: maplibregl.StyleSpecification = {
+  version: 8,
+  sources: {
+    'gibs-viirs': {
+      type: 'raster',
+      tiles: [
+        'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_SNPP_CorrectedReflectance_TrueColor/default/2025-09-15/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg',
+      ],
+      tileSize: 256,
+      attribution: '© NASA EOSDIS GIBS',
+      maxzoom: 9,
+    },
+    'esri-reference': {
+      type: 'raster',
+      tiles: [
+        'https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+      ],
+      tileSize: 256,
+      attribution: '© Esri',
+      maxzoom: 19,
+    },
+  },
+  layers: [
+    {
+      id: 'gibs-viirs-layer',
+      type: 'raster',
+      source: 'gibs-viirs',
+      minzoom: 0,
+      maxzoom: 22,
+    },
+    {
+      id: 'esri-reference-layer',
+      type: 'raster',
+      source: 'esri-reference',
+      minzoom: 0,
+      maxzoom: 22,
+      paint: { 'raster-opacity': 0.8 },
+    },
+  ],
+};
+
+// Esri Light Gray Canvas Base + Reference (Zero watermark, zero API key required)
+const ESRI_LIGHT_STYLE: maplibregl.StyleSpecification = {
+  version: 8,
+  sources: {
+    'esri-light-base': {
+      type: 'raster',
+      tiles: [
+        'https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+      ],
+      tileSize: 256,
+      attribution: '© Esri, HERE, Garmin',
+      maxzoom: 16,
+    },
+    'esri-light-reference': {
+      type: 'raster',
+      tiles: [
+        'https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
+      ],
+      tileSize: 256,
+      attribution: '© Esri',
+      maxzoom: 16,
+    },
+  },
+  layers: [
+    {
+      id: 'esri-light-base-layer',
+      type: 'raster',
+      source: 'esri-light-base',
+      minzoom: 0,
+      maxzoom: 22,
+    },
+    {
+      id: 'esri-light-ref-layer',
+      type: 'raster',
+      source: 'esri-light-reference',
+      minzoom: 0,
+      maxzoom: 22,
+      paint: { 'raster-opacity': 0.8 },
+    },
+  ],
+};
+
+export const BASEMAPS: Record<BasemapStyle, { style: maplibregl.StyleSpecification; label: string }> = {
   'esri-satellite': {
     style: ESRI_SATELLITE_STYLE,
     label: 'Satellite',
   },
   'dark-matter': {
-    style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+    style: ESRI_DARK_STYLE,
     label: 'Dark Matter',
   },
   'gibs-truecolor': {
@@ -99,7 +187,7 @@ export const BASEMAPS: Record<BasemapStyle, { style: string | maplibregl.StyleSp
     label: 'NASA VIIRS',
   },
   positron: {
-    style: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
+    style: ESRI_LIGHT_STYLE,
     label: 'Positron',
   },
 };
@@ -115,6 +203,7 @@ interface GlobeProps {
   opacity?: number;
   captureTrigger?: number;
   onSnapshotExported?: (filename: string) => void;
+  timelineIndex?: number;
 }
 
 export default function Globe({
@@ -128,13 +217,18 @@ export default function Globe({
   opacity = 0.85,
   captureTrigger = 0,
   onSnapshotExported,
+  timelineIndex = 0,
 }: GlobeProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
   const isLoadedRef = useRef(false);
 
-  // Critical Zoom & Viewport Alignment: Fit bounds with left inspector sidebar padding
+  // Cached base image element for offscreen dynamic canvas frame modulation
+  const baseImageRef = useRef<HTMLImageElement | null>(null);
+  const offscreenCanvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  // Viewport alignment: Fit bounds smoothly with left inspector sidebar padding
   const fitAreaBounds = useCallback((area: StudyArea, duration = 1400) => {
     const map = mapRef.current;
     if (!map) return;
@@ -161,15 +255,116 @@ export default function Globe({
     );
   }, []);
 
-  // Render native MapLibre image raster and hairline boundary outline
+  // Modulate SAR raster pixel data on timeline step changes and update map texture
+  const updateModulatedRaster = useCallback((stepIndex: number) => {
+    const map = mapRef.current;
+    const img = baseImageRef.current;
+    if (!map || !map.isStyleLoaded() || !img) return;
+
+    const source = map.getSource('sar-overlay') as maplibregl.ImageSource | undefined;
+    if (!source) return;
+
+    if (!offscreenCanvasRef.current) {
+      offscreenCanvasRef.current = document.createElement('canvas');
+    }
+    const canvas = offscreenCanvasRef.current;
+    const w = img.naturalWidth || img.width || 512;
+    const h = img.naturalHeight || img.height || 512;
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width = w;
+      canvas.height = h;
+    }
+
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return;
+
+    ctx.drawImage(img, 0, 0, w, h);
+
+    try {
+      const imgData = ctx.getImageData(0, 0, w, h);
+      const data = imgData.data;
+      const areaId = activeArea.id;
+
+      if (areaId === 'kerala' || areaId === 'kerala_floods') {
+        // Monsoon flood surge in steps 3-8 over Kuttanad / Vembanad wetland depression
+        const floodFactor =
+          stepIndex >= 3 && stepIndex <= 8
+            ? Math.sin(((stepIndex - 3) / 5) * Math.PI) * 0.75
+            : 0;
+
+        if (floodFactor > 0.05) {
+          for (let i = 0; i < data.length; i += 4) {
+            const a = data[i + 3];
+            if (a === 0) continue;
+            const r = data[i];
+            const g = data[i + 1];
+            const b = data[i + 2];
+            const brightness = (r + g + b) / 3;
+
+            // Low-lying land inundated by water suffers strong specular absorption (darkens)
+            if (brightness < 145) {
+              const att = 1.0 - floodFactor * (1.0 - brightness / 145);
+              data[i] = Math.max(10, Math.round(r * att));
+              data[i + 1] = Math.max(15, Math.round(g * att));
+              data[i + 2] = Math.max(30, Math.round(b * att * 0.85 + 24 * floodFactor));
+            }
+          }
+        }
+      } else if (areaId === 'turkey' || areaId === 'turkey_earthquake') {
+        // InSAR fringe phase rotation along the fault line
+        const phaseShift = ((stepIndex % 12) / 12) * Math.PI * 2;
+        const sinP = Math.sin(phaseShift);
+        const cosP = Math.cos(phaseShift);
+        for (let i = 0; i < data.length; i += 4) {
+          if (data[i + 3] === 0) continue;
+          const r = data[i];
+          const g = data[i + 1];
+          const b = data[i + 2];
+          data[i] = Math.min(255, Math.max(0, Math.round(r * (0.8 + 0.2 * cosP) + g * (0.2 * sinP))));
+          data[i + 1] = Math.min(255, Math.max(0, Math.round(g * (0.8 + 0.2 * cosP) + b * (0.2 * sinP))));
+          data[i + 2] = Math.min(255, Math.max(0, Math.round(b * (0.8 + 0.2 * cosP) + r * (0.2 * sinP))));
+        }
+      } else if (areaId === 'amazon' || areaId === 'amazon_deforestation') {
+        // Deforestation expansion: patches transition from high volume scattering to clearcut
+        const deforestProg = stepIndex / 11;
+        for (let i = 0; i < data.length; i += 4) {
+          if (data[i + 3] === 0) continue;
+          const px = (i / 4) % w;
+          const py = Math.floor(i / 4 / w);
+          const patchHash = Math.abs(Math.sin(px * 12.9898 + py * 78.233) * 43758.5453);
+          const patchVal = patchHash - Math.floor(patchHash);
+          if (patchVal < deforestProg * 0.22) {
+            data[i] = Math.round(data[i] * 0.72);
+            data[i + 1] = Math.round(data[i + 1] * 0.68);
+            data[i + 2] = Math.round(data[i + 2] * 0.72);
+          }
+        }
+      } else {
+        // Seasonal phenology oscillation
+        const mod = 1.0 + Math.sin((stepIndex / 12) * Math.PI * 2) * 0.12;
+        for (let i = 0; i < data.length; i += 4) {
+          if (data[i + 3] === 0) continue;
+          data[i] = Math.min(255, Math.round(data[i] * mod));
+          data[i + 1] = Math.min(255, Math.round(data[i + 1] * mod));
+          data[i + 2] = Math.min(255, Math.round(data[i + 2] * mod));
+        }
+      }
+
+      ctx.putImageData(imgData, 0, 0);
+      const dataUrl = canvas.toDataURL('image/webp', 0.85);
+      source.updateImage({ url: dataUrl });
+    } catch (err) {
+      console.warn('Canvas modulation update error:', err);
+    }
+  }, [activeArea.id]);
+
+  // Render native MapLibre image raster (organic, zero bounding-box border)
   const renderSarOverlay = useCallback(() => {
     const map = mapRef.current;
     if (!map || !map.isStyleLoaded()) return;
 
     if (map.getLayer('sar-overlay-layer')) map.removeLayer('sar-overlay-layer');
     if (map.getSource('sar-overlay')) map.removeSource('sar-overlay');
-    if (map.getLayer('sar-bbox-outline')) map.removeLayer('sar-bbox-outline');
-    if (map.getSource('sar-bbox')) map.removeSource('sar-bbox');
 
     if (!activeLayer) return;
 
@@ -207,154 +402,135 @@ export default function Globe({
         },
       });
 
-      // Hairline boundary polygon
-      const bboxFeature: GeoJSON.Feature<GeoJSON.Polygon> = {
-        type: 'Feature',
-        properties: {},
-        geometry: {
-          type: 'Polygon',
-          coordinates: [
-            [
-              [west, north],
-              [east, north],
-              [east, south],
-              [west, south],
-              [west, north],
-            ],
-          ],
-        },
+      // Cache base image for smooth timeline modulation
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.src = imagePath;
+      img.onload = () => {
+        baseImageRef.current = img;
+        if (timelineIndex > 0) {
+          updateModulatedRaster(timelineIndex);
+        }
       };
-
-      map.addSource('sar-bbox', {
-        type: 'geojson',
-        data: bboxFeature,
-      });
-
-      map.addLayer({
-        id: 'sar-bbox-outline',
-        type: 'line',
-        source: 'sar-bbox',
-        paint: {
-          'line-color': '#F59E0B',
-          'line-width': 1.5,
-          'line-opacity': 0.8,
-        },
-      });
     } catch (err) {
       console.warn('MapLibre overlay render warning:', err);
     }
-  }, [activeArea, activeLayer, opacity]);
+  }, [activeArea, activeLayer, opacity, timelineIndex, updateModulatedRaster]);
+
+  // Update modulated raster when timeline index changes
+  useEffect(() => {
+    if (baseImageRef.current) {
+      updateModulatedRaster(timelineIndex);
+    }
+  }, [timelineIndex, updateModulatedRaster]);
 
   // Export high-resolution annotated snapshot
   const exportSnapshot = useCallback(() => {
     const map = mapRef.current;
     if (!map) return;
 
-    try {
-      const mapCanvas = map.getCanvas();
-      const width = mapCanvas.width;
-      const height = mapCanvas.height;
+    const mapCanvas = map.getCanvas();
+    const exportCanvas = document.createElement('canvas');
+    exportCanvas.width = mapCanvas.width;
+    exportCanvas.height = mapCanvas.height;
+    const ctx = exportCanvas.getContext('2d');
+    if (!ctx) return;
 
-      const offscreen = document.createElement('canvas');
-      const footerHeight = 64;
-      offscreen.width = width;
-      offscreen.height = height + footerHeight;
+    // Draw map view
+    ctx.drawImage(mapCanvas, 0, 0);
 
-      const ctx = offscreen.getContext('2d');
-      if (!ctx) return;
+    // Overlay instrument telemetry watermark banner
+    const pad = 24;
+    ctx.fillStyle = 'rgba(9, 10, 15, 0.90)';
+    ctx.strokeStyle = '#222736';
+    ctx.lineWidth = 1;
 
-      // Draw active map canvas
-      ctx.drawImage(mapCanvas, 0, 0);
+    const bannerW = 420;
+    const bannerH = 100;
+    const bannerX = pad;
+    const bannerY = pad;
 
-      // Draw aerospace instrument telemetry footer
-      ctx.fillStyle = '#090A0F';
-      ctx.fillRect(0, height, width, footerHeight);
+    ctx.fillRect(bannerX, bannerY, bannerW, bannerH);
+    ctx.strokeRect(bannerX, bannerY, bannerW, bannerH);
 
-      // Hairline accent border
-      ctx.fillStyle = '#222736';
-      ctx.fillRect(0, height, width, 1);
+    // Header text
+    ctx.fillStyle = '#F59E0B';
+    ctx.font = 'bold 12px Inter, sans-serif';
+    ctx.fillText('EARTHWALTZ OBSERVATORY · NASA SPACE APPS 2026', bannerX + 14, bannerY + 24);
 
-      // Accent amber marker
-      ctx.fillStyle = '#F59E0B';
-      ctx.fillRect(20, height + 16, 4, 32);
+    // Study Area & Phenomenon
+    ctx.fillStyle = '#F1F5F9';
+    ctx.font = 'bold 14px Inter, sans-serif';
+    ctx.fillText(activeArea.name, bannerX + 14, bannerY + 46);
 
-      // Title & region info
-      ctx.fillStyle = '#F1F5F9';
-      ctx.font = 'bold 14px monospace';
-      ctx.fillText(`EARTHWALTZ: GLOBAL SAR OBSERVATORY · ${activeArea.name.toUpperCase()}`, 34, height + 28);
+    ctx.fillStyle = '#8A94A6';
+    ctx.font = '11px Inter, sans-serif';
+    ctx.fillText(
+      `${activeArea.phenomenon} · Layer: ${activeLayer?.label || 'SAR'} (${activeLayer?.unit || 'dB'})`,
+      bannerX + 14,
+      bannerY + 66
+    );
 
-      ctx.fillStyle = '#8A94A6';
-      ctx.font = '11px monospace';
-      const layerText = activeLayer ? `${activeLayer.label} (${activeLayer.unit})` : 'Calibrated SAR Backscatter';
-      const granuleText = activeArea.provenance?.granule_id || 'ALAV2A278633410';
-      const platformText = activeArea.provenance?.platform || 'NISAR L-Band (24 cm)';
-      ctx.fillText(`CHANNEL: ${layerText} | GRANULE: ${granuleText} | SENSOR: ${platformText}`, 34, height + 46);
+    // Sensor Provenance
+    ctx.fillStyle = '#8A94A6';
+    ctx.font = '9px monospace';
+    ctx.fillText(
+      `Sensor: ${activeArea.provenance?.platform || 'NISAR L-Band'} | ID: ${activeArea.provenance?.granule_id || 'ALAV2A278633410'}`,
+      bannerX + 14,
+      bannerY + 86
+    );
 
-      // Right-aligned metadata
-      ctx.textAlign = 'right';
-      ctx.fillStyle = '#F59E0B';
-      ctx.font = '11px monospace';
-      ctx.fillText(`UTC: ${new Date().toISOString().replace('T', ' ').slice(0, 19)}`, width - 20, height + 28);
+    const filename = `EarthWaltz_${activeArea.id}_${activeLayer?.label || 'SAR'}_${new Date().toISOString().slice(0, 10)}.png`;
+    const link = document.createElement('a');
+    link.download = filename;
+    link.href = exportCanvas.toDataURL('image/png');
+    link.click();
 
-      ctx.fillStyle = '#8A94A6';
-      ctx.fillText('NASA / ISRO SPACE APPS CHALLENGE 2026', width - 20, height + 46);
-
-      // Generate PNG and trigger download
-      offscreen.toBlob((blob) => {
-        if (!blob) return;
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        const cleanName = activeArea.name.toLowerCase().replace(/[^a-z0-9]/g, '_');
-        const filename = `EarthWaltz_${cleanName}_${Date.now()}.png`;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        onSnapshotExported?.(filename);
-      }, 'image/png');
-    } catch (err) {
-      console.error('Error generating snapshot:', err);
-    }
+    onSnapshotExported?.(filename);
   }, [activeArea, activeLayer, onSnapshotExported]);
 
-  // Trigger snapshot when captureTrigger changes
+  // Trigger snapshot export from props
   useEffect(() => {
     if (captureTrigger > 0) {
       exportSnapshot();
     }
   }, [captureTrigger, exportSnapshot]);
 
-  // Initialize MapLibre Map with preserveDrawingBuffer: true for clean snapshot export
+  // Initialize MapLibre Map instance
   useEffect(() => {
-    if (!containerRef.current || mapRef.current) return;
+    if (!containerRef.current) return;
+
+    const initialBbox = activeArea.bbox || [
+      activeArea.lng - 0.5,
+      activeArea.lat - 0.5,
+      activeArea.lng + 0.5,
+      activeArea.lat + 0.5,
+    ];
 
     const map = new maplibregl.Map({
       container: containerRef.current,
-      style: BASEMAPS[basemap].style,
-      renderWorldCopies: false,
-      preserveDrawingBuffer: true,
-      center: [activeArea.lng, activeArea.lat],
-      zoom: activeArea.zoom || 9,
-      pitch: 0,
-      bearing: 0,
-      projection: { type: 'globe' },
+      style: BASEMAPS[basemap]?.style || ESRI_SATELLITE_STYLE,
+      bounds: [
+        [initialBbox[0], initialBbox[1]],
+        [initialBbox[2], initialBbox[3]],
+      ],
+      fitBoundsOptions: {
+        padding: { top: 80, bottom: 120, left: 380, right: 60 },
+        duration: 0,
+        maxZoom: 11,
+      },
       attributionControl: false,
+      renderWorldCopies: false,
+      preserveDrawingBuffer: true, // Enables high-res canvas exports
     });
 
-    map.addControl(new maplibregl.NavigationControl({ showCompass: true }), 'top-right');
+    map.addControl(new maplibregl.NavigationControl({ showCompass: true }), 'bottom-right');
+    map.addControl(
+      new maplibregl.AttributionControl({ compact: true, customAttribution: 'EarthWaltz · NASA EOSDIS · ISRO' }),
+      'bottom-right'
+    );
 
-    map.on('load', () => {
-      isLoadedRef.current = true;
-      renderSarOverlay();
-      fitAreaBounds(activeArea, 0);
-    });
-
-    map.on('style.load', () => {
-      renderSarOverlay();
-    });
-
+    // Track cursor coordinates
     map.on('mousemove', (e) => {
       onCursorMove?.({ lat: e.lngLat.lat, lng: e.lngLat.lng });
     });
@@ -363,46 +539,48 @@ export default function Globe({
       onCursorMove?.(null);
     });
 
+    map.on('load', () => {
+      isLoadedRef.current = true;
+      renderSarOverlay();
+    });
+
+    map.on('style.load', () => {
+      renderSarOverlay();
+    });
+
     mapRef.current = map;
 
     return () => {
-      markersRef.current.forEach((m) => m.remove());
-      markersRef.current = [];
       map.remove();
       mapRef.current = null;
       isLoadedRef.current = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, []); // Run once on mount
 
-  // Update basemap style
+  // React to basemap style switch
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !isLoadedRef.current) return;
-    map.setStyle(BASEMAPS[basemap].style);
+    if (!map) return;
+    const styleSpec = BASEMAPS[basemap]?.style || ESRI_SATELLITE_STYLE;
+    map.setStyle(styleSpec);
   }, [basemap]);
 
-  // Update SAR raster whenever activeArea, activeLayer, or opacity changes
-  useEffect(() => {
-    renderSarOverlay();
-  }, [renderSarOverlay]);
-
-  // Update dynamic raster opacity directly on the MapLibre layer without rebuilding source
+  // React to opacity updates
   useEffect(() => {
     const map = mapRef.current;
-    if (map && map.getLayer('sar-overlay-layer')) {
+    if (!map || !map.isStyleLoaded()) return;
+    if (map.getLayer('sar-overlay-layer')) {
       map.setPaintProperty('sar-overlay-layer', 'raster-opacity', opacity);
     }
   }, [opacity]);
 
-  // Fly/Fit camera bounds when active area changes
+  // React to active study area or layer changes: re-render overlay & fly camera
   useEffect(() => {
-    if (isLoadedRef.current) {
-      fitAreaBounds(activeArea, 1400);
-    }
-  }, [activeArea, fitAreaBounds]);
+    renderSarOverlay();
+    fitAreaBounds(activeArea);
+  }, [activeArea, activeLayer, fitAreaBounds, renderSarOverlay]);
 
-  // Render minimal, clean geographic markers for other study areas
+  // Update study area map pin markers
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -411,22 +589,22 @@ export default function Globe({
     markersRef.current = [];
 
     areas.forEach((area) => {
+      const isSelected = area.id === activeArea.id;
+
       const el = document.createElement('div');
-      el.className = 'group cursor-pointer flex items-center justify-center';
-      el.style.width = '14px';
-      el.style.height = '14px';
+      el.className = 'group cursor-pointer select-none';
+      el.innerHTML = `
+        <div class="relative flex items-center justify-center">
+          <div class="w-3.5 h-3.5 rounded-full ${
+            isSelected
+              ? 'bg-[#F59E0B] ring-4 ring-[#F59E0B]/30'
+              : 'bg-[#12151E] border border-[#222736] group-hover:border-[#F59E0B]'
+          } transition-all"></div>
+        </div>
+      `;
 
-      const dot = document.createElement('div');
-      const isCurrent = area.id === activeArea.id;
-      dot.className = `w-2.5 h-2.5 rounded-full transition-transform ${
-        isCurrent
-          ? 'bg-[#F59E0B] ring-2 ring-[#F59E0B]/40 scale-125'
-          : 'bg-[#8A94A6] hover:bg-[#F1F5F9] hover:scale-110'
-      }`;
-      el.appendChild(dot);
-
-      el.addEventListener('click', (ev) => {
-        ev.stopPropagation();
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
         onAreaClick(area);
       });
 
@@ -436,7 +614,7 @@ export default function Globe({
 
       markersRef.current.push(marker);
     });
-  }, [areas, activeArea, onAreaClick]);
+  }, [areas, activeArea.id, onAreaClick]);
 
-  return <div ref={containerRef} className="w-full h-full absolute inset-0" />;
+  return <div ref={containerRef} className="w-full h-full relative" />;
 }

@@ -288,7 +288,7 @@ export default function InspectorSidebar({
       </section>
 
       {/* SECTION C: CONTEXT OVERLAYS & SURFACE SONIFICATION */}
-      <section className="p-4 flex flex-col gap-3.5">
+      <section className="p-4 pb-14 flex flex-col gap-3.5">
         {/* Context Overlays */}
         <div className="flex flex-col gap-1.5">
           <span className="text-[10px] font-mono tracking-widest text-[#8A94A6] uppercase">

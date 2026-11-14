@@ -519,7 +519,7 @@ def colormap_diverging(data, vmin=-2.0, vmax=2.0):
     return rgba
 
 
-def generate_optical_cloudy(shape=(1024, 1024), seed=42):
+def generate_optical_cloudy(shape=(1024, 1024), seed=42, area_type='general', **kwargs):
     """Simulate cloudy optical RGB image with realistic white cloud banks."""
     h, w = shape
     rng = np.random.RandomState(seed)
@@ -588,7 +588,12 @@ def write_telemetry_json(path, data, unit, bbox):
 
 
 def write_timeseries_json(path, seed=42, extra_series=None):
-    """Generate 12-month synthetic time series JSON."""
+    """Generate 12-month synthetic time series JSON or write pre-computed dict."""
+    if isinstance(seed, dict):
+        with open(str(path), 'w') as f:
+            json.dump(seed, f, indent=2)
+        return
+
     rng = np.random.RandomState(seed)
     dates = [f"2025-{m:02d}-15" for m in range(1, 13)]
 

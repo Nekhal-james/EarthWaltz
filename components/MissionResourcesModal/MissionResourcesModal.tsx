@@ -66,12 +66,19 @@ export default function MissionResourcesModal({ activeArea, onClose }: MissionRe
   const [loading, setLoading] = useState(false);
   const [queryError, setQueryError] = useState<string | null>(null);
 
+  const bbox = activeArea.bbox || [
+    activeArea.lng - 0.5,
+    activeArea.lat - 0.5,
+    activeArea.lng + 0.5,
+    activeArea.lat + 0.5,
+  ];
+
   // Live Query via /api/asf-proxy
   const handleQueryAsf = async () => {
     setLoading(true);
     setQueryError(null);
     try {
-      const bboxStr = activeArea.bbox.join(',');
+      const bboxStr = bbox.join(',');
       const res = await fetch(`/api/asf-proxy?bbox=${encodeURIComponent(bboxStr)}&platform=ALOS&maxResults=6`);
       if (!res.ok) throw new Error(`ASF API returned HTTP ${res.status}`);
       const data = await res.json();
@@ -89,7 +96,7 @@ export default function MissionResourcesModal({ activeArea, onClose }: MissionRe
     setLoading(true);
     setQueryError(null);
     try {
-      const bboxStr = activeArea.bbox.join(',');
+      const bboxStr = bbox.join(',');
       const res = await fetch(`/api/stac-search?bbox=${encodeURIComponent(bboxStr)}&limit=6`);
       if (!res.ok) throw new Error(`STAC API returned HTTP ${res.status}`);
       const data = await res.json();
@@ -112,7 +119,7 @@ export default function MissionResourcesModal({ activeArea, onClose }: MissionRe
               NASA Mission Resources and Live STAC Explorer
             </h3>
             <p className="text-xs text-[#8A94A6] mt-0.5">
-              Target: {activeArea.name} ({activeArea.bbox.map((v) => v.toFixed(2)).join(', ')})
+              Target: {activeArea.name} ({bbox.map((v) => v.toFixed(2)).join(', ')})
             </p>
           </div>
           <button
@@ -197,7 +204,7 @@ export default function MissionResourcesModal({ activeArea, onClose }: MissionRe
                     Query NASA ASF DAAC Archive for {activeArea.name}
                   </div>
                   <div className="text-[11px] text-[#8A94A6] font-mono mt-0.5">
-                    Bounding Box: [{activeArea.bbox.join(', ')}]
+                    Bounding Box: [{bbox.join(', ')}]
                   </div>
                 </div>
                 <button

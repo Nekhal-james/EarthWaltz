@@ -16,6 +16,7 @@ interface GlobeWrapperProps {
   opacity?: number;
   captureTrigger?: number;
   onSnapshotExported?: (filename: string) => void;
+  timelineIndex?: number;
 }
 
 export default function GlobeWrapper(props: GlobeWrapperProps) {

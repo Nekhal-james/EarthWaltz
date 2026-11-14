@@ -26,6 +26,11 @@ export default function HomePage() {
   const [timelineDate, setTimelineDate] = useState<string>('');
   const [timelineDateIndex, setTimelineDateIndex] = useState<number>(0);
 
+  const handleTimelineDateChange = useCallback((idx: number, d: string) => {
+    setTimelineDateIndex(idx);
+    setTimelineDate(d);
+  }, []);
+
   // Snapshot & Modals
   const [captureTrigger, setCaptureTrigger] = useState<number>(0);
   const [snapshotToast, setSnapshotToast] = useState<string | null>(null);
@@ -54,26 +59,30 @@ export default function HomePage() {
     if (!isTourPlaying || areas.length === 0) return;
 
     const interval = setInterval(() => {
-      setTourIndex((prev) => {
-        const next = (prev + 1) % areas.length;
-        handleAreaChange(areas[next]);
-        return next;
-      });
+      setTourIndex((prev) => (prev + 1) % areas.length);
     }, 8000);
 
     return () => clearInterval(interval);
-  }, [isTourPlaying, areas, handleAreaChange]);
+  }, [isTourPlaying, areas.length]);
+
+  // Synchronize area selection when tourIndex changes while tour is playing
+  useEffect(() => {
+    if (!isTourPlaying || areas.length === 0) return;
+    const targetArea = areas[tourIndex];
+    if (targetArea) {
+      handleAreaChange(targetArea);
+    }
+  }, [tourIndex, isTourPlaying, areas, handleAreaChange]);
 
   const handleToggleTour = useCallback(() => {
     setIsTourPlaying((prev) => {
       const next = !prev;
-      if (next && areas.length > 0) {
+      if (next) {
         setTourIndex(0);
-        handleAreaChange(areas[0]);
       }
       return next;
     });
-  }, [areas, handleAreaChange]);
+  }, []);
 
   const handleSnapshotSuccess = useCallback((filename: string) => {
     setSnapshotToast(filename);
@@ -145,6 +154,7 @@ export default function HomePage() {
             opacity={sarOpacity}
             captureTrigger={captureTrigger}
             onSnapshotExported={handleSnapshotSuccess}
+            timelineIndex={timelineDateIndex}
           />
 
           {/* ZONE 4: COMPACT CURSOR HUD (Top-Right of Map) */}
@@ -160,10 +170,7 @@ export default function HomePage() {
           <BottomDock
             activeLayer={activeLayer}
             timeseriesPath={activeArea.timeseries}
-            onDateChange={(idx, d) => {
-              setTimelineDateIndex(idx);
-              setTimelineDate(d);
-            }}
+            onDateChange={handleTimelineDateChange}
           />
 
           {/* SNAPSHOT TOAST NOTIFICATION */}

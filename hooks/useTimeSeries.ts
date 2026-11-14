@@ -69,7 +69,7 @@ export function useTimeSeries(timeseriesPath: string | null) {
   useEffect(() => {
     if (!playing || !data || !data.dates || data.dates.length === 0) return;
 
-    const intervalTime = Math.max(250, Math.round(1200 / speed));
+    const intervalTime = Math.max(200, Math.round(700 / speed));
 
     const interval = setInterval(() => {
       setCurrentIndex((prev) => {

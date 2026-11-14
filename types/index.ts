@@ -41,9 +41,9 @@ export interface StudyArea {
   polarizations: string[];
   frequencies: FrequencyInfo[];
   hometown: boolean;
-  bbox: [number, number, number, number];
-  default_layer: string;
-  provenance: GranuleProvenance;
+  bbox?: [number, number, number, number];
+  default_layer?: string;
+  provenance?: GranuleProvenance;
   layers: Record<string, LayerInfo>;
   optical_cloudy: string;
   timeseries: string;
