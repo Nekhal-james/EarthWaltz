@@ -253,6 +253,15 @@ export default function Globe({
       duration: duration,
       essential: true,
     });
+
+    if (mapLeftRef.current) {
+      mapLeftRef.current.jumpTo({
+        center: [area.lng, area.lat],
+        zoom: 10.0,
+        pitch: 18,
+        bearing: 0,
+      });
+    }
   }, []);
 
   // Modulate SAR raster pixel data on timeline step or frequency band changes
@@ -632,6 +641,9 @@ export default function Globe({
       if (existingSource) {
         existingSource.setCoordinates(swathCoords);
         existingSource.updateImage({ url: opticalPath, coordinates: swathCoords });
+        if (leftMap.getLayer('optical-overlay-layer')) {
+          leftMap.setPaintProperty('optical-overlay-layer', 'raster-opacity', 0.98);
+        }
       } else {
         leftMap.addSource('optical-overlay', {
           type: 'image',
@@ -643,8 +655,9 @@ export default function Globe({
           type: 'raster',
           source: 'optical-overlay',
           paint: {
-            'raster-opacity': 0.95,
+            'raster-opacity': 0.98,
             'raster-fade-duration': 150,
+            'raster-resampling': 'linear',
           },
         });
       }
@@ -763,9 +776,12 @@ export default function Globe({
 
     let leftMap: maplibregl.Map | null = null;
     if (leftContainerRef.current) {
+      // Deep clone style to avoid mutation conflict between map instances
+      const leftStyle = JSON.parse(JSON.stringify(ESRI_SATELLITE_STYLE));
+
       leftMap = new maplibregl.Map({
         container: leftContainerRef.current,
-        style: ESRI_SATELLITE_STYLE,
+        style: leftStyle,
         center: [activeArea.lng, activeArea.lat],
         zoom: 10.0,
         pitch: 18,
@@ -775,16 +791,25 @@ export default function Globe({
         interactive: false,
       });
 
+      // Assign ref IMMEDIATELY so any callback has access to it
+      mapLeftRef.current = leftMap;
+
       leftMap.on('load', () => {
         isLeftLoadedRef.current = true;
+        if (mapRef.current) {
+          leftMap?.jumpTo({
+            center: mapRef.current.getCenter(),
+            zoom: mapRef.current.getZoom(),
+            pitch: mapRef.current.getPitch(),
+            bearing: mapRef.current.getBearing(),
+          });
+        }
         renderOpticalOverlay();
       });
 
       leftMap.on('style.load', () => {
         renderOpticalOverlay();
       });
-
-      mapLeftRef.current = leftMap;
     }
 
     map.addControl(new maplibregl.NavigationControl({ showCompass: true }), 'bottom-right');
@@ -980,12 +1005,12 @@ export default function Globe({
   return (
     <div className="w-full h-full relative overflow-hidden">
       {/* Right / Base Map: Primary Interactive NISAR Radar Swath */}
-      <div ref={containerRef} className="w-full h-full absolute inset-0" />
+      <div ref={containerRef} className="w-full h-full absolute inset-0 z-0" />
 
       {/* Left Map: Geographically-Synchronized Optical Satellite Comparison View */}
       <div
         ref={leftContainerRef}
-        className="w-full h-full absolute inset-0 pointer-events-none transition-[clip-path] duration-75 ease-out"
+        className="w-full h-full absolute inset-0 z-10 pointer-events-none transition-[clip-path] duration-75 ease-out"
         style={{
           clipPath:
             mode === 'story'
