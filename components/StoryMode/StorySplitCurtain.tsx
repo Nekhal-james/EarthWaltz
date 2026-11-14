@@ -3,13 +3,11 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react';
 
 interface StorySplitCurtainProps {
-  opticalCloudyPath: string;
   position: number;
   onPositionChange: (pos: number) => void;
 }
 
 export default function StorySplitCurtain({
-  opticalCloudyPath,
   position,
   onPositionChange,
 }: StorySplitCurtainProps) {
@@ -54,49 +52,22 @@ export default function StorySplitCurtain({
   return (
     <div
       ref={containerRef}
-      className="absolute inset-0 pointer-events-none select-none z-10 overflow-hidden"
+      className="absolute inset-0 pointer-events-none select-none z-20 overflow-hidden font-sans"
     >
-      {/* LEFT OF CURTAIN: OPTICAL SATELLITE CLOUD DECK OVERLAY */}
-      <div
-        className="absolute inset-0 overflow-hidden"
-        style={{ clipPath: `inset(0 ${100 - position}% 0 0)` }}
-      >
-        {/* Realistic multi-layer monsoon / smoke cloud deck */}
-        <div className="absolute inset-0 bg-[#0D0E0C]/40 backdrop-blur-[2px]" />
-        
-        {/* Semi-transparent cloudy optical swath composite */}
-        <div className="absolute inset-0 flex items-center justify-center opacity-70 mix-blend-screen pointer-events-none">
-          <img
-            src={opticalCloudyPath}
-            alt="Optical Cloud Cover"
-            className="w-full h-full object-cover filter contrast-125 brightness-110"
-          />
-        </div>
-
-        {/* Cloud texture gradient simulation for realistic atmosphere */}
-        <div
-          className="absolute inset-0 pointer-events-none opacity-60"
-          style={{
-            background:
-              'radial-gradient(ellipse at 30% 40%, rgba(240, 243, 246, 0.7) 0%, rgba(180, 190, 200, 0.45) 50%, rgba(90, 105, 120, 0.3) 100%)',
-          }}
-        />
-
-        {/* Left Badge: What Optical Satellites See */}
-        <div className="absolute top-4 left-4 pointer-events-auto">
-          <div className="bg-white/95 backdrop-blur-md border border-[#E2E8F0] rounded-lg px-3 py-1.5 shadow-md flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#94A3B8]" />
-            <span className="text-xs font-semibold text-[#0F172A]">
-              What optical satellites see
-            </span>
-            <span className="text-[10px] text-[#64748B] font-medium border-l border-[#E2E8F0] pl-2">
-              Cloud-obscured view
-            </span>
-          </div>
+      {/* Top Left Label: What optical satellites see */}
+      <div className="absolute top-4 left-4 pointer-events-auto">
+        <div className="bg-white/95 backdrop-blur-md border border-[#E2E8F0] rounded-lg px-3 py-1.5 shadow-md flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-[#94A3B8]" />
+          <span className="text-xs font-semibold text-[#0F172A]">
+            What optical satellites see
+          </span>
+          <span className="text-[10px] text-[#64748B] font-medium border-l border-[#E2E8F0] pl-2">
+            Cloud-obscured view
+          </span>
         </div>
       </div>
 
-      {/* RIGHT OF CURTAIN BADGE: WHAT NISAR RADAR SEES */}
+      {/* Top Right Label: What NISAR radar sees */}
       <div className="absolute top-4 right-4 pointer-events-auto">
         <div className="bg-white/95 backdrop-blur-md border border-[#E2E8F0] rounded-lg px-3 py-1.5 shadow-md flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-[#2563EB]" />
@@ -129,4 +100,3 @@ export default function StorySplitCurtain({
     </div>
   );
 }
-

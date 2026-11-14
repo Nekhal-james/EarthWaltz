@@ -207,6 +207,8 @@ interface GlobeProps {
   timelineIndex?: number;
   selectedBand?: string;
   isTimelinePlaying?: boolean;
+  curtainPosition?: number;
+  mode?: 'story' | 'instrument';
 }
 
 export default function Globe({
@@ -223,42 +225,34 @@ export default function Globe({
   timelineIndex = 0,
   selectedBand = 'L-Band',
   isTimelinePlaying = false,
+  curtainPosition = 35,
+  mode = 'story',
 }: GlobeProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const leftContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
+  const mapLeftRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
   const isLoadedRef = useRef(false);
+  const isLeftLoadedRef = useRef(false);
 
   // Cached base image element for offscreen dynamic canvas frame modulation
   const baseImageRef = useRef<HTMLImageElement | null>(null);
   const offscreenCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  // Viewport alignment: Fit bounds tightly around ~90km x 90km swath (zoom level 9.0 - 10.5)
-  const fitAreaBounds = useCallback((area: StudyArea, duration = 1400) => {
+  // Viewport alignment: Tight ~85km swath framing at Zoom 10.0 (fills 80% of viewport)
+  const fitAreaBounds = useCallback((area: StudyArea, duration = 1100) => {
     const map = mapRef.current;
     if (!map) return;
 
-    const bbox = area.bbox || [
-      area.lng - 0.45,
-      area.lat - 0.40,
-      area.lng + 0.45,
-      area.lat + 0.40,
-    ];
-    const [west, south, east, north] = bbox;
-
-    map.fitBounds(
-      [
-        [west, south],
-        [east, north],
-      ],
-      {
-        padding: { top: 40, bottom: 60, left: 340, right: 40 },
-        duration: duration,
-        essential: true,
-        maxZoom: 11.2,
-        minZoom: 9.8,
-      }
-    );
+    map.flyTo({
+      center: [area.lng, area.lat],
+      zoom: 10.0,
+      pitch: 18,
+      bearing: 0,
+      duration: duration,
+      essential: true,
+    });
   }, []);
 
   // Modulate SAR raster pixel data on timeline step or frequency band changes
@@ -610,6 +604,55 @@ export default function Globe({
     }
   }, [activeArea, activeLayer, opacity, timelineIndex, selectedBand, updateModulatedRaster, renderAncillaryLayers]);
 
+  // Render optical satellite comparison on the left synchronized map
+  const renderOpticalOverlay = useCallback(() => {
+    const leftMap = mapLeftRef.current;
+    if (!leftMap || !leftMap.isStyleLoaded()) return;
+
+    const opticalPath = activeArea.optical_cloudy
+      ? `/data/${activeArea.optical_cloudy}`
+      : '/data/optical_cloudy.webp';
+
+    const bbox = activeArea.bbox || [
+      activeArea.lng - 0.45,
+      activeArea.lat - 0.40,
+      activeArea.lng + 0.45,
+      activeArea.lat + 0.40,
+    ];
+    const [west, south, east, north] = bbox;
+    const swathCoords: [[number, number], [number, number], [number, number], [number, number]] = [
+      [west, north],
+      [east, north],
+      [east, south],
+      [west, south],
+    ];
+
+    try {
+      const existingSource = leftMap.getSource('optical-overlay') as maplibregl.ImageSource | undefined;
+      if (existingSource) {
+        existingSource.setCoordinates(swathCoords);
+        existingSource.updateImage({ url: opticalPath, coordinates: swathCoords });
+      } else {
+        leftMap.addSource('optical-overlay', {
+          type: 'image',
+          url: opticalPath,
+          coordinates: swathCoords,
+        });
+        leftMap.addLayer({
+          id: 'optical-overlay-layer',
+          type: 'raster',
+          source: 'optical-overlay',
+          paint: {
+            'raster-opacity': 0.95,
+            'raster-fade-duration': 150,
+          },
+        });
+      }
+    } catch (err) {
+      console.warn('MapLibre optical overlay warning:', err);
+    }
+  }, [activeArea]);
+
   // Update modulated raster when timeline index or frequency band changes
   useEffect(() => {
     if (baseImageRef.current) {
@@ -702,34 +745,47 @@ export default function Globe({
     }
   }, [captureTrigger, exportSnapshot]);
 
-  // Initialize MapLibre Map instance
+  // Initialize MapLibre Map instances (Dual-Mode: Primary Interactive Map + Synchronized Left Map)
   useEffect(() => {
     if (!containerRef.current) return;
-
-    const initialBbox = activeArea.bbox || [
-      activeArea.lng - 0.45,
-      activeArea.lat - 0.40,
-      activeArea.lng + 0.45,
-      activeArea.lat + 0.40,
-    ];
 
     const map = new maplibregl.Map({
       container: containerRef.current,
       style: BASEMAPS[basemap]?.style || ESRI_SATELLITE_STYLE,
-      bounds: [
-        [initialBbox[0], initialBbox[1]],
-        [initialBbox[2], initialBbox[3]],
-      ],
-      fitBoundsOptions: {
-        padding: { top: 80, bottom: 120, left: 380, right: 60 },
-        duration: 0,
-        maxZoom: 11,
-        minZoom: 8.8,
-      },
+      center: [activeArea.lng, activeArea.lat],
+      zoom: 10.0,
+      pitch: 18,
+      bearing: 0,
       attributionControl: false,
       renderWorldCopies: false,
       preserveDrawingBuffer: true,
     });
+
+    let leftMap: maplibregl.Map | null = null;
+    if (leftContainerRef.current) {
+      leftMap = new maplibregl.Map({
+        container: leftContainerRef.current,
+        style: ESRI_SATELLITE_STYLE,
+        center: [activeArea.lng, activeArea.lat],
+        zoom: 10.0,
+        pitch: 18,
+        bearing: 0,
+        attributionControl: false,
+        renderWorldCopies: false,
+        interactive: false,
+      });
+
+      leftMap.on('load', () => {
+        isLeftLoadedRef.current = true;
+        renderOpticalOverlay();
+      });
+
+      leftMap.on('style.load', () => {
+        renderOpticalOverlay();
+      });
+
+      mapLeftRef.current = leftMap;
+    }
 
     map.addControl(new maplibregl.NavigationControl({ showCompass: true }), 'bottom-right');
     map.addControl(
@@ -743,6 +799,17 @@ export default function Globe({
 
     map.on('mouseout', () => {
       onCursorMove?.(null);
+    });
+
+    map.on('move', () => {
+      if (mapLeftRef.current) {
+        mapLeftRef.current.jumpTo({
+          center: map.getCenter(),
+          zoom: map.getZoom(),
+          pitch: map.getPitch(),
+          bearing: map.getBearing(),
+        });
+      }
     });
 
     map.on('load', () => {
@@ -759,6 +826,7 @@ export default function Globe({
     // Observe container size changes (e.g. switching between Story Mode & Instrument Mode)
     const resizeObserver = new ResizeObserver(() => {
       map.resize();
+      mapLeftRef.current?.resize();
     });
     if (containerRef.current) {
       resizeObserver.observe(containerRef.current);
@@ -769,6 +837,11 @@ export default function Globe({
       map.remove();
       mapRef.current = null;
       isLoadedRef.current = false;
+      if (leftMap) {
+        leftMap.remove();
+        mapLeftRef.current = null;
+        isLeftLoadedRef.current = false;
+      }
     };
   }, []);
 
@@ -792,15 +865,17 @@ export default function Globe({
   // React to active study area or layer changes: re-render overlay & fly camera
   useEffect(() => {
     renderSarOverlay();
+    renderOpticalOverlay();
     fitAreaBounds(activeArea);
 
     const map = mapRef.current;
     if (map) {
       map.once('moveend', () => {
         renderSarOverlay();
+        renderOpticalOverlay();
       });
     }
-  }, [activeArea, activeLayer, fitAreaBounds, renderSarOverlay]);
+  }, [activeArea, activeLayer, fitAreaBounds, renderSarOverlay, renderOpticalOverlay]);
 
   // 12-step Orbital Waltz Camera Choreography on timeline play
   useEffect(() => {
@@ -902,5 +977,22 @@ export default function Globe({
     });
   }, [areas, activeArea.id, onAreaClick]);
 
-  return <div ref={containerRef} className="w-full h-full relative" />;
+  return (
+    <div className="w-full h-full relative overflow-hidden">
+      {/* Right / Base Map: Primary Interactive NISAR Radar Swath */}
+      <div ref={containerRef} className="w-full h-full absolute inset-0" />
+
+      {/* Left Map: Geographically-Synchronized Optical Satellite Comparison View */}
+      <div
+        ref={leftContainerRef}
+        className="w-full h-full absolute inset-0 pointer-events-none transition-[clip-path] duration-75 ease-out"
+        style={{
+          clipPath:
+            mode === 'story'
+              ? `inset(0 ${100 - (curtainPosition ?? 35)}% 0 0)`
+              : 'inset(0 100% 0 0)',
+        }}
+      />
+    </div>
+  );
 }

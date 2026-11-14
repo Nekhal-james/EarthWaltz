@@ -5,14 +5,14 @@
       "name": "Kerala, India",
       "subtitle": "Kuttanad Wetlands & Western Ghats",
       "lat": 9.65,
-      "lng": 76.7,
-      "zoom": 9.5,
+      "lng": 76.65,
+      "zoom": 10.0,
       "bearing": 0,
-      "pitch": 45,
+      "pitch": 18,
       "bbox": [
         76.25,
         9.25,
-        77.15,
+        77.05,
         10.05
       ],
       "default_layer": "hh",
@@ -94,9 +94,9 @@
       "subtitle": "Tropical Deforestation & Flooding",
       "lat": -3.05,
       "lng": -60.0,
-      "zoom": 9.5,
+      "zoom": 10.0,
       "bearing": 0,
-      "pitch": 45,
+      "pitch": 18,
       "bbox": [
         -60.45,
         -3.45,
@@ -191,16 +191,16 @@
       "id": "himalayas",
       "name": "Himalayas",
       "subtitle": "Glacier Dynamics & Cryosphere",
-      "lat": 28.0,
-      "lng": 86.85,
-      "zoom": 9.5,
+      "lat": 27.98,
+      "lng": 86.9,
+      "zoom": 10.0,
       "bearing": 0,
-      "pitch": 45,
+      "pitch": 18,
       "bbox": [
-        86.4,
+        86.5,
         27.6,
         87.3,
-        28.4
+        28.35
       ],
       "default_layer": "goff_range",
       "provenance": {
@@ -290,16 +290,16 @@
       "id": "turkey",
       "name": "Turkey / Anatolia",
       "subtitle": "Earthquake Ground Deformation",
-      "lat": 37.5,
+      "lat": 37.55,
       "lng": 37.0,
-      "zoom": 9.5,
+      "zoom": 10.0,
       "bearing": 0,
-      "pitch": 45,
+      "pitch": 18,
       "bbox": [
         36.55,
-        37.1,
+        37.15,
         37.45,
-        37.9
+        37.95
       ],
       "default_layer": "insar",
       "provenance": {
@@ -376,16 +376,16 @@
       "id": "punjab",
       "name": "Punjab, India",
       "subtitle": "Dual-Frequency Crop & Soil Moisture",
-      "lat": 30.8,
-      "lng": 75.5,
-      "zoom": 9.5,
+      "lat": 30.9,
+      "lng": 75.45,
+      "zoom": 10.0,
       "bearing": 0,
-      "pitch": 45,
+      "pitch": 18,
       "bbox": [
-        75.05,
-        30.4,
-        75.95,
-        31.2
+        75.0,
+        30.5,
+        75.9,
+        31.3
       ],
       "default_layer": "sband_hh",
       "provenance": {
@@ -474,16 +474,16 @@
       "id": "indonesia",
       "name": "Indonesia / Sumatra",
       "subtitle": "Peatland Fires & Smoke Penetration",
-      "lat": 0.5,
-      "lng": 102.0,
-      "zoom": 9.5,
+      "lat": -0.2,
+      "lng": 102.2,
+      "zoom": 10.0,
       "bearing": 0,
-      "pitch": 45,
+      "pitch": 18,
       "bbox": [
-        101.55,
-        0.1,
-        102.45,
-        0.9
+        101.8,
+        -0.6,
+        102.6,
+        0.2
       ],
       "default_layer": "cband_hv",
       "provenance": {

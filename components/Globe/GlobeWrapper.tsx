@@ -19,6 +19,8 @@ interface GlobeWrapperProps {
   timelineIndex?: number;
   selectedBand?: string;
   isTimelinePlaying?: boolean;
+  curtainPosition?: number;
+  mode?: 'story' | 'instrument';
 }
 
 export default function GlobeWrapper(props: GlobeWrapperProps) {

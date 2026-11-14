@@ -202,13 +202,14 @@ export default function HomePage() {
             timelineIndex={timelineDateIndex}
             selectedBand={selectedBand}
             isTimelinePlaying={isTimelinePlaying}
+            curtainPosition={storyCurtainPos}
+            mode={mode}
           />
 
           {/* STORY MODE OVERLAYS: BEFORE/AFTER SPLIT CURTAIN & STATUS STRIP */}
           {mode === 'story' && (
             <>
               <StorySplitCurtain
-                opticalCloudyPath={`/data/${activeArea.optical_cloudy}`}
                 position={storyCurtainPos}
                 onPositionChange={setStoryCurtainPos}
               />
