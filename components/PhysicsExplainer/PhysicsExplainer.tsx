@@ -42,56 +42,56 @@ const GENERAL_PHYSICS = [
 
 export default function PhysicsExplainer({ area, onClose }: PhysicsExplainerProps) {
   return (
-    <div className="fixed inset-0 z-50 bg-[#090A0F]/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="relative w-full max-w-2xl max-h-[85vh] bg-[#090A0F] border border-[#222736] rounded-lg shadow-2xl flex flex-col overflow-hidden">
+    <div className="fixed inset-0 z-50 bg-[#111210]/80 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="relative w-full max-w-2xl max-h-[85vh] bg-[#111210] border border-[#242522] rounded-lg shadow-2xl flex flex-col overflow-hidden">
         {/* Modal Header */}
-        <div className="px-5 py-4 border-b border-[#222736] flex items-center justify-between">
+        <div className="px-5 py-4 border-b border-[#242522] flex items-center justify-between">
           <div>
-            <h3 className="text-sm font-semibold text-[#F1F5F9]">SAR Remote Sensing Physics Guide</h3>
-            <p className="text-xs text-[#8A94A6] mt-0.5">
+            <h3 className="text-sm font-semibold text-[#F3F2EE]">SAR remote sensing physics guide</h3>
+            <p className="text-xs text-[#9A9B94] mt-0.5">
               Microwave scattering, polarimetry, and interferometry principles
             </p>
           </div>
           <button
             onClick={onClose}
-            className="text-xs font-mono text-[#8A94A6] hover:text-[#F1F5F9] px-2 py-1 rounded border border-[#222736] hover:bg-[#12151E] transition-colors"
+            className="text-xs text-[#9A9B94] hover:text-[#F3F2EE] px-2 py-1 rounded border border-[#242522] hover:bg-[#181916] transition-colors"
           >
-            Esc / Close
+            ✕ Close
           </button>
         </div>
 
         {/* Modal Content */}
         <div className="p-5 overflow-y-auto flex flex-col gap-4">
-          <div className="bg-[#12151E] border border-[#222736] rounded p-3">
-            <span className="text-[10px] font-mono tracking-wider text-[#F59E0B] uppercase">
-              Current Region Focus · {area.name}
+          <div className="bg-[#181916] border border-[#242522] rounded-md p-3">
+            <span className="text-[11px] font-medium text-[#10B981]">
+              Current region focus · {area.name}
             </span>
-            <p className="text-xs text-[#F1F5F9] font-medium mt-1">{area.phenomenon}</p>
-            <p className="text-xs text-[#8A94A6] leading-relaxed mt-1">{area.description}</p>
+            <p className="text-xs text-[#F3F2EE] font-medium mt-1">{area.phenomenon}</p>
+            <p className="text-xs text-[#9A9B94] leading-relaxed mt-1">{area.description}</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {GENERAL_PHYSICS.map((item, idx) => (
               <div
                 key={idx}
-                className="bg-[#12151E]/60 border border-[#222736] rounded p-3 flex flex-col gap-1.5"
+                className="bg-[#181916] border border-[#242522] rounded-md p-3 flex flex-col gap-1.5"
               >
                 <div className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#F59E0B]" />
-                  <h4 className="text-xs font-semibold text-[#F1F5F9]">{item.title}</h4>
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" />
+                  <h4 className="text-xs font-semibold text-[#F3F2EE]">{item.title}</h4>
                 </div>
-                <p className="text-[11px] text-[#8A94A6] leading-relaxed">{item.content}</p>
+                <p className="text-[11px] text-[#9A9B94] leading-relaxed">{item.content}</p>
               </div>
             ))}
           </div>
         </div>
 
         {/* Modal Footer */}
-        <div className="px-5 py-3 border-t border-[#222736] bg-[#12151E]/40 flex justify-between items-center text-xs">
-          <span className="text-[#8A94A6] font-mono text-[11px]">NASA / ISRO SAR Calibration Standards</span>
+        <div className="px-5 py-3 border-t border-[#242522] bg-[#181916]/50 flex justify-between items-center text-xs">
+          <span className="text-[#9A9B94] text-[11px]">NASA / ISRO SAR Calibration Standards</span>
           <button
             onClick={onClose}
-            className="px-3 py-1 bg-[#222736] hover:bg-[#2c3345] text-[#F1F5F9] text-xs font-medium rounded transition-colors"
+            className="px-3 py-1 bg-[#242522] hover:bg-[#2c3345] text-[#F3F2EE] text-xs font-medium rounded-md transition-colors"
           >
             Done
           </button>

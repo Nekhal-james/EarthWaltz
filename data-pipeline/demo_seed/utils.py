@@ -438,32 +438,89 @@ def generate_goff(shape=(1024, 1024), direction='range', seed=42):
 
 
 # ---------------------------------------------------------------------------
-# Colormaps (Pure NumPy, No Matplotlib)
+# Colormaps (Pure NumPy, Scientifically Calibrated)
 # ---------------------------------------------------------------------------
 
-def colormap_backscatter(data_db, vmin=-25, vmax=5):
-    """Cyan (#06b6d4) -> Magenta (#d946ef) -> Yellow (#eab308) for backscatter in dB."""
+def colormap_hh(data_db, vmin=-24.0, vmax=0.0):
+    """
+    HH Backscatter: Slate (#0F172A) -> Cyan (#06B6D4) -> Amber (#F59E0B) -> Gold (#FEF08A).
+    - Water = -24 dB (Slate)
+    - Midland Plains = -12 dB (Cyan)
+    - Radar Slopes / Double-Bounce = -4 dB (Amber)
+    - Intense Flooded Forest / Urban = 0 dB (Gold)
+    """
     norm = np.clip((data_db - vmin) / (vmax - vmin), 0.0, 1.0)
-    cyan = np.array([6, 182, 212], dtype=np.float64)
-    magenta = np.array([217, 70, 239], dtype=np.float64)
-    yellow = np.array([234, 179, 8], dtype=np.float64)
-
     h, w = norm.shape
     rgba = np.zeros((h, w, 4), dtype=np.uint8)
-    low = norm < 0.5
-    t_low = norm[low] * 2.0
-    t_high = (norm[~low] - 0.5) * 2.0
+
+    c0 = np.array([15, 23, 42], dtype=np.float64)     # Slate
+    c1 = np.array([6, 182, 212], dtype=np.float64)    # Cyan
+    c2 = np.array([245, 158, 11], dtype=np.float64)   # Amber
+    c3 = np.array([254, 240, 138], dtype=np.float64)  # Gold
+
+    # 3 segment piecewise interpolation: [0, 0.5], [0.5, 0.83], [0.83, 1.0]
+    m0 = norm < 0.5
+    m1 = (norm >= 0.5) & (norm < 0.83)
+    m2 = norm >= 0.83
+
+    t0 = norm[m0] / 0.5
+    t1 = (norm[m1] - 0.5) / 0.33
+    t2 = (norm[m2] - 0.83) / 0.17
 
     for c in range(3):
-        rgba[..., c][low] = ((1.0 - t_low) * cyan[c] + t_low * magenta[c]).astype(np.uint8)
-        rgba[..., c][~low] = ((1.0 - t_high) * magenta[c] + t_high * yellow[c]).astype(np.uint8)
+        rgba[..., c][m0] = ((1.0 - t0) * c0[c] + t0 * c1[c]).astype(np.uint8)
+        rgba[..., c][m1] = ((1.0 - t1) * c1[c] + t1 * c2[c]).astype(np.uint8)
+        rgba[..., c][m2] = ((1.0 - t2) * c2[c] + t2 * c3[c]).astype(np.uint8)
+
     rgba[..., 3] = 255
     return rgba
 
 
-def colormap_phase(data_rad):
-    """Full rainbow HSV interferogram colormap for InSAR phase [-π, π]."""
-    norm = np.clip((data_rad + np.pi) / (2.0 * np.pi), 0.0, 1.0)
+def colormap_hv(data_db, vmin=-24.0, vmax=-9.0):
+    """
+    HV Biomass / Cross-Pol Distinct Colormap:
+    Deep Obsidian (#0D1B1E) at -24 dB -> Deep Teal (#1B4332) at -18 dB ->
+    Emerald (#2D6A4F) at -14 dB -> Luminous Chartreuse/Gold (#D9ED92) at -9 dB.
+    """
+    norm = np.clip((data_db - vmin) / (vmax - vmin), 0.0, 1.0)
+    h, w = norm.shape
+    rgba = np.zeros((h, w, 4), dtype=np.uint8)
+
+    c0 = np.array([13, 27, 30], dtype=np.float64)     # Obsidian
+    c1 = np.array([27, 67, 50], dtype=np.float64)     # Deep Teal (-18 dB, norm ~0.40)
+    c2 = np.array([45, 106, 79], dtype=np.float64)    # Emerald (-14 dB, norm ~0.67)
+    c3 = np.array([217, 237, 146], dtype=np.float64)  # Chartreuse (-9 dB, norm ~1.0)
+
+    m0 = norm < 0.40
+    m1 = (norm >= 0.40) & (norm < 0.67)
+    m2 = norm >= 0.67
+
+    t0 = norm[m0] / 0.40
+    t1 = (norm[m1] - 0.40) / 0.27
+    t2 = (norm[m2] - 0.67) / 0.33
+
+    for c in range(3):
+        rgba[..., c][m0] = ((1.0 - t0) * c0[c] + t0 * c1[c]).astype(np.uint8)
+        rgba[..., c][m1] = ((1.0 - t1) * c1[c] + t1 * c2[c]).astype(np.uint8)
+        rgba[..., c][m2] = ((1.0 - t2) * c2[c] + t2 * c3[c]).astype(np.uint8)
+
+    rgba[..., 3] = 255
+    return rgba
+
+
+def colormap_backscatter(data_db, vmin=-24.0, vmax=0.0):
+    """Backwards-compatible alias for HH backscatter."""
+    return colormap_hh(data_db, vmin=vmin, vmax=vmax)
+
+
+def colormap_phase(data_rad, coherence=None):
+    """
+    Interferogram rainbow colormap for InSAR phase [-π, π].
+    When coherence is provided, low-coherence regions (< 0.35) have natural
+    decorrelation speckle noise blended in so fringes look authentic.
+    """
+    wrapped = np.arctan2(np.sin(data_rad), np.cos(data_rad))
+    norm = np.clip((wrapped + np.pi) / (2.0 * np.pi), 0.0, 1.0)
     h = norm * 6.0
     i = np.floor(h).astype(int) % 6
     f = h - np.floor(h)
@@ -483,16 +540,41 @@ def colormap_phase(data_rad):
         out[mask, 1] = g[mask]
         out[mask, 2] = b[mask]
     out[..., 3] = 255
+
+    # Blend natural decorrelation speckle in low-coherence areas
+    if coherence is not None:
+        low_coh = coherence < 0.38
+        if np.any(low_coh):
+            speckle = np.random.RandomState(42).randint(30, 220, size=(low_coh.sum(), 3), dtype=np.uint8)
+            t_blend = np.clip((0.38 - coherence[low_coh]) / 0.28, 0.0, 1.0)[:, None]
+            out[low_coh, :3] = (
+                (1.0 - t_blend) * out[low_coh, :3] + t_blend * speckle
+            ).astype(np.uint8)
+
     return out
 
 
 def colormap_coherence(data_coh):
-    """Monochrome grayscale for coherence [0, 1]."""
-    val = np.clip(data_coh * 255.0, 0, 255).astype(np.uint8)
-    rgba = np.zeros(data_coh.shape + (4,), dtype=np.uint8)
-    rgba[..., 0] = val
-    rgba[..., 1] = val
-    rgba[..., 2] = val
+    """
+    Calibrated Basalt (#111210) -> Mid Gray (#4B5563) -> Crisp Pure White (#FFFFFF).
+    Zero synthetic circular polka dots.
+    """
+    norm = np.clip(data_coh, 0.0, 1.0)
+    h, w = norm.shape
+    rgba = np.zeros((h, w, 4), dtype=np.uint8)
+
+    c0 = np.array([17, 18, 16], dtype=np.float64)    # Basalt
+    c1 = np.array([75, 85, 99], dtype=np.float64)    # Mid Gray
+    c2 = np.array([255, 255, 255], dtype=np.float64) # Pure White
+
+    m0 = norm < 0.50
+    t0 = norm[m0] / 0.50
+    t1 = (norm[~m0] - 0.50) / 0.50
+
+    for c in range(3):
+        rgba[..., c][m0] = ((1.0 - t0) * c0[c] + t0 * c1[c]).astype(np.uint8)
+        rgba[..., c][~m0] = ((1.0 - t1) * c1[c] + t1 * c2[c]).astype(np.uint8)
+
     rgba[..., 3] = 255
     return rgba
 

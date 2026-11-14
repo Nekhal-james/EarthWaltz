@@ -436,7 +436,7 @@ export default function Globe({
           visibility: ancillaryVisible.includes('infrastructure') ? 'visible' : 'none',
         },
         paint: {
-          'line-color': '#090A0F',
+          'line-color': '#111210',
           'line-width': 4.5,
           'line-opacity': 0.85,
         },
@@ -449,7 +449,7 @@ export default function Globe({
           visibility: ancillaryVisible.includes('infrastructure') ? 'visible' : 'none',
         },
         paint: {
-          'line-color': '#06B6D4',
+          'line-color': '#10B981',
           'line-width': 2.5,
           'line-opacity': 0.95,
         },
@@ -473,8 +473,8 @@ export default function Globe({
         },
         paint: {
           'circle-radius': 9,
-          'circle-color': '#F59E0B',
-          'circle-opacity': 0.35,
+          'circle-color': '#10B981',
+          'circle-opacity': 0.28,
         },
       });
       map.addLayer({
@@ -486,9 +486,9 @@ export default function Globe({
         },
         paint: {
           'circle-radius': 4.5,
-          'circle-color': '#EF4444',
+          'circle-color': '#10B981',
           'circle-stroke-width': 1.5,
-          'circle-stroke-color': '#F1F5F9',
+          'circle-stroke-color': '#F3F2EE',
         },
       });
       map.addLayer({
@@ -504,8 +504,8 @@ export default function Globe({
           'text-anchor': 'top',
         },
         paint: {
-          'text-color': '#F1F5F9',
-          'text-halo-color': '#090A0F',
+          'text-color': '#F3F2EE',
+          'text-halo-color': '#111210',
           'text-halo-width': 2,
         },
       });
@@ -516,9 +516,6 @@ export default function Globe({
   const renderSarOverlay = useCallback(() => {
     const map = mapRef.current;
     if (!map || !map.isStyleLoaded()) return;
-
-    if (map.getLayer('sar-overlay-layer')) map.removeLayer('sar-overlay-layer');
-    if (map.getSource('sar-overlay')) map.removeSource('sar-overlay');
 
     if (!activeLayer) return;
 
@@ -540,27 +537,40 @@ export default function Globe({
     const imagePath = `/data/${activeLayer.image}`;
 
     try {
-      map.addSource('sar-overlay', {
-        type: 'image',
-        url: imagePath,
-        coordinates: coordinates,
-      });
+      const existingSource = map.getSource('sar-overlay') as maplibregl.ImageSource | undefined;
+      if (existingSource) {
+        existingSource.setCoordinates(coordinates);
+        existingSource.updateImage({ url: imagePath, coordinates: coordinates });
+        if (map.getLayer('sar-overlay-layer')) {
+          map.setPaintProperty('sar-overlay-layer', 'raster-opacity', opacity);
+        }
+      } else {
+        map.addSource('sar-overlay', {
+          type: 'image',
+          url: imagePath,
+          coordinates: coordinates,
+        });
 
-      // Insert raster layer before ancillary layers so context overlays render cleanly on top
-      map.addLayer(
-        {
-          id: 'sar-overlay-layer',
-          type: 'raster',
-          source: 'sar-overlay',
-          paint: {
-            'raster-opacity': opacity,
-            'raster-fade-duration': 200,
+        // Insert raster layer before ancillary layers so context overlays render cleanly on top
+        map.addLayer(
+          {
+            id: 'sar-overlay-layer',
+            type: 'raster',
+            source: 'sar-overlay',
+            paint: {
+              'raster-opacity': opacity,
+              'raster-fade-duration': 150,
+              'raster-resampling': 'linear',
+              'raster-contrast': 0.12,
+              'raster-brightness-min': 0.04,
+            },
           },
-        },
-        map.getLayer('ancillary-agriculture-fill') ? 'ancillary-agriculture-fill' : undefined
-      );
+          map.getLayer('ancillary-agriculture-fill') ? 'ancillary-agriculture-fill' : undefined
+        );
+      }
 
-      // Cache base image for smooth timeline modulation
+      // Reset cached base image and reload immediately for smooth timeline modulation
+      baseImageRef.current = null;
       const img = new Image();
       img.crossOrigin = 'anonymous';
       img.src = imagePath;
@@ -616,8 +626,8 @@ export default function Globe({
     ctx.drawImage(mapCanvas, 0, 0);
 
     const pad = 24;
-    ctx.fillStyle = 'rgba(9, 10, 15, 0.90)';
-    ctx.strokeStyle = '#222736';
+    ctx.fillStyle = 'rgba(17, 18, 16, 0.94)';
+    ctx.strokeStyle = '#242522';
     ctx.lineWidth = 1;
 
     const bannerW = 420;
@@ -628,15 +638,15 @@ export default function Globe({
     ctx.fillRect(bannerX, bannerY, bannerW, bannerH);
     ctx.strokeRect(bannerX, bannerY, bannerW, bannerH);
 
-    ctx.fillStyle = '#F59E0B';
+    ctx.fillStyle = '#10B981';
     ctx.font = 'bold 12px Inter, sans-serif';
-    ctx.fillText('EARTHWALTZ OBSERVATORY · NASA SPACE APPS 2026', bannerX + 14, bannerY + 24);
+    ctx.fillText('EarthWaltz Observatory · NASA Space Apps 2026', bannerX + 14, bannerY + 24);
 
-    ctx.fillStyle = '#F1F5F9';
+    ctx.fillStyle = '#F3F2EE';
     ctx.font = 'bold 14px Inter, sans-serif';
     ctx.fillText(activeArea.name, bannerX + 14, bannerY + 46);
 
-    ctx.fillStyle = '#8A94A6';
+    ctx.fillStyle = '#9A9B94';
     ctx.font = '11px Inter, sans-serif';
     ctx.fillText(
       `${activeArea.phenomenon} · Layer: ${activeLayer?.label || 'SAR'} (${activeLayer?.unit || 'dB'}) [${selectedBand}]`,
@@ -644,7 +654,7 @@ export default function Globe({
       bannerY + 66
     );
 
-    ctx.fillStyle = '#8A94A6';
+    ctx.fillStyle = '#9A9B94';
     ctx.font = '9px monospace';
     ctx.fillText(
       `Sensor: ${activeArea.provenance?.platform || 'NISAR L-Band'} | ID: ${activeArea.provenance?.granule_id || 'ALAV2A278633410'}`,
@@ -769,8 +779,8 @@ export default function Globe({
         <div class="relative flex items-center justify-center">
           <div class="w-3.5 h-3.5 rounded-full ${
             isSelected
-              ? 'bg-[#F59E0B] ring-4 ring-[#F59E0B]/30'
-              : 'bg-[#12151E] border border-[#222736] group-hover:border-[#F59E0B]'
+              ? 'bg-[#10B981] ring-4 ring-[#10B981]/30'
+              : 'bg-[#181916] border border-[#242522] group-hover:border-[#10B981]'
           } transition-all"></div>
         </div>
       `;

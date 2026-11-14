@@ -109,34 +109,58 @@ export default function TelemetryOverlay({ activeLayer, area, cursorCoords }: Te
       };
     }
 
+    const isHV = (activeLayer?.image || '').toLowerCase().includes('hv') || (activeLayer?.label || '').toLowerCase().includes('hv');
+
     // Backscatter dB physics classification
+    if (isHV) {
+      if (displayVal < -22.5) {
+        return {
+          label: 'Specular Reflection (Smooth Water)',
+          sub: 'Zero Cross-Pol Depolarization',
+          color: 'bg-cyan-950/70 text-cyan-300 border-cyan-800/50',
+        };
+      }
+      if (displayVal >= -14.5) {
+        return {
+          label: 'Dense Canopy Volume Scattering',
+          sub: 'Multi-Story Forest Depolarization',
+          color: 'bg-emerald-950/70 text-emerald-300 border-emerald-800/50',
+        };
+      }
+      return {
+        label: 'Surface / Low-Biomass Agricultural Scatter',
+        sub: 'Moderate Crop & Soil Roughness Scatter',
+        color: 'bg-[#181916] text-[#E2E8F0] border-[#242522]',
+      };
+    }
+
     if (displayVal > -8.0) {
       return {
         label: 'Double-Bounce (Flooded Forest / Urban)',
         sub: 'Corner Reflector Enhancement',
-        color: 'bg-amber-900/70 text-amber-300 border-amber-500/50',
+        color: 'bg-amber-950/70 text-amber-300 border-amber-800/50',
       };
     }
     if (displayVal > -14.0) {
       return {
-        label: 'Volume Scattering (Canopy / Crops)',
-        sub: 'Multiple Random Depolarization',
-        color: 'bg-emerald-900/70 text-emerald-300 border-emerald-500/50',
+        label: 'Plains / Agricultural Backscatter',
+        sub: 'Moderate Diffuse Surface Return',
+        color: 'bg-[#181916] text-[#E2E8F0] border-[#242522]',
       };
     }
     if (displayVal < -18.0) {
       return {
         label: 'Specular Reflection (Smooth Water)',
         sub: 'Radar Pulse Deflected Away',
-        color: 'bg-cyan-900/70 text-cyan-300 border-cyan-500/50',
+        color: 'bg-cyan-950/70 text-cyan-300 border-cyan-800/50',
       };
     }
     return {
       label: 'Rough Surface / Diffuse Scattering',
       sub: 'Isotropic Soil & Low Vegetation',
-      color: 'bg-purple-900/70 text-purple-300 border-purple-500/50',
+      color: 'bg-stone-900 text-stone-300 border-stone-700',
     };
-  }, [displayVal, unit]);
+  }, [displayVal, unit, activeLayer]);
 
   const latFormatted = cursorCoords
     ? `${Math.abs(cursorCoords.lat).toFixed(4)}°${cursorCoords.lat >= 0 ? 'N' : 'S'}`

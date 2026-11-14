@@ -23,7 +23,7 @@ import requests
 
 from demo_seed.utils import (
     write_geotiff, write_webp, write_telemetry_json, write_timeseries_json,
-    colormap_backscatter, colormap_phase, colormap_coherence, colormap_diverging,
+    colormap_hh, colormap_hv, colormap_backscatter, colormap_phase, colormap_coherence, colormap_diverging,
     apply_orbital_swath_mask,
 )
 
@@ -446,7 +446,7 @@ def parse_nisar_l2_hdf5(h5_path: str, study_area: str, out_dir: Path):
                 db_hh = 10.0 * np.log10(np.maximum(power_hh, 1e-5))
                 bbox = REAL_MISSION_PROVENANCE.get(study_area, {}).get("bbox", [76.25, 9.25, 77.15, 10.05])
                 write_geotiff(target_dir / "hh_backscatter.tif", db_hh, bbox)
-                write_webp(target_dir / "hh_backscatter.webp", colormap_backscatter(db_hh))
+                write_webp(target_dir / "hh_backscatter.webp", colormap_hh(db_hh))
                 write_telemetry_json(target_dir / "telemetry_hh.json", db_hh, "dB", bbox)
                 print("  ✓ Processed HHHH backscatter")
             if "HVHV" in grid:
@@ -454,7 +454,7 @@ def parse_nisar_l2_hdf5(h5_path: str, study_area: str, out_dir: Path):
                 db_hv = 10.0 * np.log10(np.maximum(power_hv, 1e-5))
                 bbox = REAL_MISSION_PROVENANCE.get(study_area, {}).get("bbox", [76.25, 9.25, 77.15, 10.05])
                 write_geotiff(target_dir / "hv_backscatter.tif", db_hv, bbox)
-                write_webp(target_dir / "hv_backscatter.webp", colormap_backscatter(db_hv))
+                write_webp(target_dir / "hv_backscatter.webp", colormap_hv(db_hv))
                 write_telemetry_json(target_dir / "telemetry_hv.json", db_hv, "dB", bbox)
                 print("  ✓ Processed HVHV backscatter")
         elif "GUNW" in h5.get("/science/LSAR", {}):

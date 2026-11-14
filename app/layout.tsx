@@ -30,7 +30,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable}`}>
-      <body className="bg-[#090A0F] text-[#F1F5F9] font-[family-name:var(--font-inter)] antialiased">
+      <body className="bg-[#111210] text-[#F3F2EE] font-[family-name:var(--font-inter)] antialiased">
         {children}
       </body>
     </html>

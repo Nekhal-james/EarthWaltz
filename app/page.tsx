@@ -89,17 +89,17 @@ export default function HomePage() {
 
   if (loading) {
     return (
-      <div className="h-screen w-screen flex items-center justify-center bg-[#090A0F]">
+      <div className="h-screen w-screen flex items-center justify-center bg-[#111210]">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-[#222736] border-t-[#F59E0B] rounded-full animate-spin" />
-          <p className="font-mono text-xs text-[#8A94A6]">Initializing EarthWaltz Observatory...</p>
+          <div className="w-8 h-8 border-2 border-[#242522] border-t-[#10B981] rounded-full animate-spin" />
+          <p className="text-xs text-[#9A9B94]">Initializing EarthWaltz Observatory...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="h-screen w-screen flex flex-col bg-[#090A0F] text-[#F1F5F9] overflow-hidden select-none">
+    <div className="h-screen w-screen flex flex-col bg-[#111210] text-[#F3F2EE] overflow-hidden select-none">
       {/* ZONE 1: TOP COMMAND BAR */}
       <Header
         areas={areas}
@@ -174,8 +174,8 @@ export default function HomePage() {
 
           {/* SNAPSHOT TOAST NOTIFICATION */}
           {snapshotToast && (
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-[#12151E] border border-[#F59E0B] rounded px-4 py-2 text-xs font-mono text-[#F1F5F9] shadow-2xl z-50 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-[#F59E0B]" />
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-[#181916] border border-[#10B981] rounded-md px-4 py-2 text-xs font-mono text-[#F3F2EE] shadow-2xl z-50 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-[#10B981]" />
               <span>Snapshot exported: {snapshotToast}</span>
             </div>
           )}
