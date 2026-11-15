@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { Bricolage_Grotesque, Atkinson_Hyperlegible } from 'next/font/google';
-import { Analytics } from '@vercel/analytics/react';
+import { Analytics } from '@vercel/analytics/next';
 import './globals.css';
 
 const bricolageGrotesque = Bricolage_Grotesque({
