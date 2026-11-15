@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
 // Verified curated NASA DAAC granules for offline resilience
 const VERIFIED_ASF_GRANULES: Record<string, any> = {

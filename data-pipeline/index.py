@@ -11,9 +11,12 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 try:
-    from pipeline import REAL_MISSION_PROVENANCE
+    from provenance import REAL_MISSION_PROVENANCE
 except Exception:
-    REAL_MISSION_PROVENANCE = {}
+    try:
+        from pipeline import REAL_MISSION_PROVENANCE
+    except Exception:
+        REAL_MISSION_PROVENANCE = {}
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):

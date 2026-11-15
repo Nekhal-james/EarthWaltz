@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
 // Curated verified STAC fallback items for NASA/ISRO SAR datasets
 const FALLBACK_STAC_ITEMS: Record<string, any[]> = {

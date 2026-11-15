@@ -1,5 +1,3 @@
-numpy>=1.26
-rasterio>=1.3
-h5py>=3.10
-pyproj>=3.6
-Pillow>=10.0
+# Internal serverless data-pipeline service dependencies
+# Standard library (http.server, json, os, sys) powers data-pipeline/index.py
+requests>=2.28
