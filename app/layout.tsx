@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Bricolage_Grotesque, Atkinson_Hyperlegible } from 'next/font/google';
+import { Analytics } from '@vercel/analytics/react';
 import './globals.css';
 
 const bricolageGrotesque = Bricolage_Grotesque({
@@ -39,6 +40,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         className={`${bricolageGrotesque.variable} ${atkinsonHyperlegible.variable} bg-[#F6F5F0] text-[#121417] font-sans antialiased selection:bg-[#0047AB]/20 selection:text-[#121417]`}
       >
         {children}
+        <Analytics />
       </body>
     </html>
   );
