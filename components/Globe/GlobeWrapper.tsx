@@ -21,6 +21,7 @@ interface GlobeWrapperProps {
   isTimelinePlaying?: boolean;
   curtainPosition?: number;
   mode?: 'story' | 'instrument';
+  showOpticalSplit?: boolean;
   showClouds?: boolean;
 }
 

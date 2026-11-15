@@ -83,6 +83,10 @@ export default function HomePage() {
   const [showClouds, setShowClouds] = useState<boolean>(false);
   const handleToggleClouds = useCallback(() => setShowClouds((prev) => !prev), []);
 
+  // Optical satellite split comparison panel toggle (default FALSE: full radar observatory map on load)
+  const [showOpticalSplit, setShowOpticalSplit] = useState<boolean>(false);
+  const handleToggleOpticalSplit = useCallback(() => setShowOpticalSplit((prev) => !prev), []);
+
   // Snapshot & Modals
   const [captureTrigger, setCaptureTrigger] = useState<number>(0);
   const [snapshotToast, setSnapshotToast] = useState<string | null>(null);
@@ -186,6 +190,8 @@ export default function HomePage() {
         onBasemapChange={setBasemap}
         opacity={sarOpacity}
         onOpacityChange={setSarOpacity}
+        showOpticalSplit={showOpticalSplit}
+        onToggleOpticalSplit={handleToggleOpticalSplit}
         showClouds={showClouds}
         onToggleClouds={handleToggleClouds}
       />
@@ -200,7 +206,12 @@ export default function HomePage() {
             onSelectArea={handleAreaChange}
             activeLayerKey={activeLayerKey}
             onSelectLayer={setActiveLayerKey}
-            onFocusCurtain={() => setCurtainPosition(38)}
+            onFocusCurtain={() => {
+              setShowOpticalSplit(true);
+              setCurtainPosition(38);
+            }}
+            showOpticalSplit={showOpticalSplit}
+            onToggleOpticalSplit={handleToggleOpticalSplit}
             onSwitchToInstrument={() => setMode('instrument')}
             isPlayingSonification={isSonifying}
             onToggleSonification={handleToggleStorySonification}
@@ -250,6 +261,7 @@ export default function HomePage() {
             isTimelinePlaying={isTimelinePlaying}
             curtainPosition={curtainPosition}
             mode={mode}
+            showOpticalSplit={showOpticalSplit}
             showClouds={showClouds}
           />
 
@@ -257,6 +269,8 @@ export default function HomePage() {
           {mode === 'story' && (
             <>
               <StorySplitCurtain
+                isOpen={showOpticalSplit}
+                onToggle={handleToggleOpticalSplit}
                 position={curtainPosition}
                 onPositionChange={setCurtainPosition}
                 showClouds={showClouds}

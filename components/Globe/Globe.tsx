@@ -275,6 +275,7 @@ interface GlobeProps {
   isTimelinePlaying?: boolean;
   curtainPosition?: number;
   mode?: 'story' | 'instrument';
+  showOpticalSplit?: boolean;
   showClouds?: boolean;
 }
 
@@ -294,6 +295,7 @@ export default function Globe({
   isTimelinePlaying = false,
   curtainPosition = 38,
   mode = 'story',
+  showOpticalSplit = false,
   showClouds = false,
 }: GlobeProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -630,8 +632,8 @@ export default function Globe({
     // 1. Draw bottom radar map
     ctx.drawImage(radarCanvas, 0, 0);
 
-    // 2. In story mode, composite top optical map clipped by curtain position
-    if (mode === 'story' && opticalMap) {
+    // 2. In story mode, composite top optical map clipped by curtain position if optical split is active
+    if (mode === 'story' && opticalMap && showOpticalSplit) {
       const opticalCanvas = opticalMap.getCanvas();
       const splitX = Math.round(((curtainPosition ?? 38) / 100) * exportCanvas.width);
 
@@ -706,7 +708,7 @@ export default function Globe({
     link.click();
 
     onSnapshotExported?.(filename);
-  }, [activeArea, activeLayer, selectedBand, mode, curtainPosition, onSnapshotExported]);
+  }, [activeArea, activeLayer, selectedBand, mode, curtainPosition, showOpticalSplit, onSnapshotExported]);
 
   // Trigger snapshot export from props
   useEffect(() => {
@@ -982,10 +984,12 @@ export default function Globe({
           position: 'absolute',
           inset: 0,
           clipPath:
-            mode === 'story'
+            mode === 'story' && showOpticalSplit
               ? `inset(0 ${100 - curtainPosition}% 0 0)`
               : 'inset(0 100% 0 0)',
-          pointerEvents: mode === 'story' ? 'auto' : 'none',
+          pointerEvents: mode === 'story' && showOpticalSplit ? 'auto' : 'none',
+          opacity: mode === 'story' && showOpticalSplit ? 1 : 0,
+          transition: 'opacity 180ms ease',
         }}
       />
     </div>

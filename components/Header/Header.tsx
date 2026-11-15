@@ -24,6 +24,8 @@ interface HeaderProps {
   onBasemapChange: (basemap: BasemapStyle) => void;
   opacity: number;
   onOpacityChange: (opacity: number) => void;
+  showOpticalSplit?: boolean;
+  onToggleOpticalSplit?: () => void;
   showClouds?: boolean;
   onToggleClouds?: () => void;
 }
@@ -65,6 +67,8 @@ export default function Header({
   onBasemapChange,
   opacity,
   onOpacityChange,
+  showOpticalSplit = false,
+  onToggleOpticalSplit,
   showClouds = false,
   onToggleClouds,
 }: HeaderProps) {
@@ -166,8 +170,26 @@ export default function Header({
           <span>GitHub</span>
         </a>
 
-        {/* Cloud View Toggle Button on Top Bar */}
-        {onToggleClouds && (
+        {/* Optical Satellite Split Panel Activation Toggle */}
+        {onToggleOpticalSplit && mode === 'story' && (
+          <button
+            onClick={onToggleOpticalSplit}
+            className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium border transition-colors cursor-pointer ${
+              showOpticalSplit
+                ? 'bg-[#0047AB] text-white border-[#0047AB] font-semibold'
+                : 'border-[#D0CEC4] bg-[#EAE8E0] text-[#121417] hover:bg-[#D0CEC4]/60'
+            }`}
+            title={showOpticalSplit ? 'Exit optical satellite comparison' : 'Compare optical satellite vs radar'}
+          >
+            <svg className="w-3.5 h-3.5 fill-none stroke-current" viewBox="0 0 24 24" strokeWidth="2">
+              <path d="M8 7h8m-8 5h8m-8 5h8M4 5v14m16-14v14" />
+            </svg>
+            <span>{showOpticalSplit ? 'Optical Split: ON' : 'Compare Optical'}</span>
+          </button>
+        )}
+
+        {/* Cloud View Toggle Button on Top Bar (only displayed when optical split is active) */}
+        {onToggleClouds && showOpticalSplit && (
           <button
             onClick={onToggleClouds}
             className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium border transition-colors cursor-pointer ${

@@ -3,6 +3,8 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react';
 
 interface StorySplitCurtainProps {
+  isOpen: boolean;
+  onToggle: () => void;
   position: number;
   onPositionChange: (pos: number) => void;
   showClouds?: boolean;
@@ -10,6 +12,8 @@ interface StorySplitCurtainProps {
 }
 
 export default function StorySplitCurtain({
+  isOpen,
+  onToggle,
   position,
   onPositionChange,
   showClouds = false,
@@ -53,12 +57,34 @@ export default function StorySplitCurtain({
     };
   }, [isDragging, handlePointerMove]);
 
+  // When closed, render a clean activation button on the top-left of the map
+  if (!isOpen) {
+    return (
+      <div className="absolute top-4 left-4 pointer-events-auto z-20 font-sans">
+        <button
+          onClick={onToggle}
+          className="bg-[#F6F5F0] hover:bg-[#EAE8E0] border border-[#D0CEC4] hover:border-[#0047AB] text-[#121417] px-3 py-1.5 rounded-md shadow-md flex items-center gap-2 text-xs font-medium cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98]"
+          title="Open split panel to compare optical satellite imagery with radar"
+        >
+          <span className="w-2 h-2 rounded-full bg-[#0047AB] shrink-0" />
+          <span className="font-semibold text-[#121417]">Compare with optical satellite view</span>
+          <span className="text-[10px] text-[#71717A] border-l border-[#D0CEC4] pl-2 font-normal">
+            Split curtain
+          </span>
+          <svg className="w-3.5 h-3.5 text-[#0047AB] fill-none stroke-current ml-0.5" viewBox="0 0 24 24" strokeWidth="2.5">
+            <path d="M9 18l6-6-6-6" />
+          </svg>
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div
       ref={containerRef}
       className="absolute inset-0 pointer-events-none select-none z-20 overflow-hidden font-sans"
     >
-      {/* Top Left Label & Cloud View Toggle Button */}
+      {/* Top Left Label, Cloud Toggle & Close Button */}
       <div className="absolute top-4 left-4 pointer-events-auto flex items-center gap-2">
         <div className="bg-[#F6F5F0] border border-[#D0CEC4] rounded-md px-3 py-1.5 shadow-sm flex items-center gap-2">
           <span className={`w-2 h-2 rounded-full ${showClouds ? 'bg-[#71717A]' : 'bg-[#10B981]'}`} />
@@ -87,6 +113,16 @@ export default function StorySplitCurtain({
             <span>{showClouds ? 'Clouds: ON' : 'Turn on clouds'}</span>
           </button>
         )}
+
+        {/* Button to close optical split comparison */}
+        <button
+          onClick={onToggle}
+          className="px-2.5 py-1.5 text-xs font-medium rounded-md border border-[#D0CEC4] bg-[#F6F5F0] text-[#121417] hover:bg-[#EAE8E0] hover:text-[#DC2626] shadow-sm transition-all flex items-center gap-1 cursor-pointer select-none"
+          title="Close optical satellite split panel"
+        >
+          <span className="font-bold text-xs leading-none">✕</span>
+          <span>Close split</span>
+        </button>
       </div>
 
       {/* Top Right Label: What NISAR radar sees */}

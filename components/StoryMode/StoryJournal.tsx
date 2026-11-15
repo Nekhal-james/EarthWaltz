@@ -10,6 +10,8 @@ interface StoryJournalProps {
   activeLayerKey: string;
   onSelectLayer: (layerKey: string) => void;
   onFocusCurtain?: () => void;
+  showOpticalSplit?: boolean;
+  onToggleOpticalSplit?: () => void;
   onSwitchToInstrument?: () => void;
   isPlayingSonification: boolean;
   onToggleSonification: () => void;
@@ -90,6 +92,8 @@ export default function StoryJournal({
   onToggleSonification,
   isPlayingTimeline = false,
   onToggleTimeline,
+  showOpticalSplit = false,
+  onToggleOpticalSplit,
   selectedBand = 'L-Band',
   onSelectBand,
   ancillaryVisible = [],
@@ -263,6 +267,21 @@ export default function StoryJournal({
         </div>
 
         <div className="pt-2 flex flex-col gap-2">
+          {onToggleOpticalSplit && (
+            <button
+              onClick={onToggleOpticalSplit}
+              className={`w-full py-2 px-3 text-xs font-medium border transition-colors flex items-center justify-center gap-2 ${
+                showOpticalSplit
+                  ? 'bg-[#0047AB] text-white border-[#0047AB] font-semibold'
+                  : 'bg-[#EAE8E0] text-[#121417] border-[#D0CEC4] hover:bg-[#D0CEC4]/60'
+              }`}
+            >
+              <svg className="w-3.5 h-3.5 fill-none stroke-current" viewBox="0 0 24 24" strokeWidth="2">
+                <path d="M8 7h8m-8 5h8m-8 5h8M4 5v14m16-14v14" />
+              </svg>
+              <span>{showOpticalSplit ? 'Exit optical comparison' : 'Compare with optical satellite view'}</span>
+            </button>
+          )}
           <button
             onClick={onToggleTimeline}
             className="w-full py-2.5 px-3 text-xs font-semibold bg-[#0047AB] text-white hover:bg-[#003882] transition-colors"
