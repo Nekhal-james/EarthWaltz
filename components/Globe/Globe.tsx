@@ -98,8 +98,11 @@ const OPTICAL_MAP_STYLE: maplibregl.StyleSpecification = {
       source: 'nasa-gibs-clouds',
       minzoom: 0,
       maxzoom: 22,
+      layout: {
+        visibility: 'none',
+      },
       paint: {
-        'raster-opacity': 0.55,
+        'raster-opacity': 0,
       },
     },
     {
@@ -272,6 +275,7 @@ interface GlobeProps {
   isTimelinePlaying?: boolean;
   curtainPosition?: number;
   mode?: 'story' | 'instrument';
+  showClouds?: boolean;
 }
 
 export default function Globe({
@@ -290,6 +294,7 @@ export default function Globe({
   isTimelinePlaying = false,
   curtainPosition = 38,
   mode = 'story',
+  showClouds = false,
 }: GlobeProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const radarContainerRef = useRef<HTMLDivElement>(null);
@@ -546,12 +551,18 @@ export default function Globe({
 
     const coordinates = getBboxCoordinates(activeArea);
     const cloudImagePath = `/data/${activeArea.optical_cloudy}`;
+    const targetOpacity = showClouds ? 0.85 : 0;
+    const targetVisibility = showClouds ? 'visible' : 'none';
 
     try {
       const existingCloudSource = map.getSource('optical-cloud-deck') as maplibregl.ImageSource | undefined;
       if (existingCloudSource) {
         existingCloudSource.setCoordinates(coordinates);
         existingCloudSource.updateImage({ url: cloudImagePath, coordinates });
+        if (map.getLayer('optical-cloud-deck-layer')) {
+          map.setPaintProperty('optical-cloud-deck-layer', 'raster-opacity', targetOpacity);
+          map.setLayoutProperty('optical-cloud-deck-layer', 'visibility', targetVisibility);
+        }
       } else {
         map.addSource('optical-cloud-deck', {
           type: 'image',
@@ -566,8 +577,11 @@ export default function Globe({
             id: 'optical-cloud-deck-layer',
             type: 'raster',
             source: 'optical-cloud-deck',
+            layout: {
+              visibility: targetVisibility,
+            },
             paint: {
-              'raster-opacity': 0.85,
+              'raster-opacity': targetOpacity,
               'raster-resampling': 'linear',
               'raster-fade-duration': 150,
             },
@@ -578,7 +592,27 @@ export default function Globe({
     } catch {
       /* silent fallback, never console.error */
     }
-  }, [activeArea]);
+  }, [activeArea, showClouds]);
+
+  // Dynamically modulate cloud layers on showClouds toggle
+  useEffect(() => {
+    const map = opticalMapRef.current;
+    if (!map || !map.isStyleLoaded()) return;
+
+    const gibsOpacity = showClouds ? 0.55 : 0;
+    const deckOpacity = showClouds ? 0.85 : 0;
+    const targetVisibility = showClouds ? 'visible' : 'none';
+
+    if (map.getLayer('nasa-gibs-cloud-layer')) {
+      map.setPaintProperty('nasa-gibs-cloud-layer', 'raster-opacity', gibsOpacity);
+      map.setLayoutProperty('nasa-gibs-cloud-layer', 'visibility', targetVisibility);
+    }
+
+    if (map.getLayer('optical-cloud-deck-layer')) {
+      map.setPaintProperty('optical-cloud-deck-layer', 'raster-opacity', deckOpacity);
+      map.setLayoutProperty('optical-cloud-deck-layer', 'visibility', targetVisibility);
+    }
+  }, [showClouds]);
 
   // High-resolution dual-layer snapshot export combining radar and optical maps with curtain divider
   const exportSnapshot = useCallback(() => {

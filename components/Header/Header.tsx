@@ -24,6 +24,8 @@ interface HeaderProps {
   onBasemapChange: (basemap: BasemapStyle) => void;
   opacity: number;
   onOpacityChange: (opacity: number) => void;
+  showClouds?: boolean;
+  onToggleClouds?: () => void;
 }
 
 const BASEMAPS: Record<BasemapStyle, { label: string }> = {
@@ -63,6 +65,8 @@ export default function Header({
   onBasemapChange,
   opacity,
   onOpacityChange,
+  showClouds = false,
+  onToggleClouds,
 }: HeaderProps) {
   const [toolsOpen, setToolsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
@@ -161,6 +165,24 @@ export default function Header({
           </svg>
           <span>GitHub</span>
         </a>
+
+        {/* Cloud View Toggle Button on Top Bar */}
+        {onToggleClouds && (
+          <button
+            onClick={onToggleClouds}
+            className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium border transition-colors cursor-pointer ${
+              showClouds
+                ? 'bg-[#0047AB] text-white border-[#0047AB] font-semibold'
+                : 'border-[#D0CEC4] bg-[#EAE8E0] text-[#121417] hover:bg-[#D0CEC4]/60'
+            }`}
+            title={showClouds ? 'Turn off cloud view' : 'Turn on cloud-obscured view'}
+          >
+            <svg className="w-3.5 h-3.5 fill-none stroke-current" viewBox="0 0 24 24" strokeWidth="2">
+              <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />
+            </svg>
+            <span>{showClouds ? 'Clouds: On' : 'Clouds: Off'}</span>
+          </button>
+        )}
 
         {/* Workbench Quick Actions */}
         {mode === 'instrument' && (

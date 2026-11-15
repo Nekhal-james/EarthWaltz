@@ -5,11 +5,15 @@ import React, { useRef, useState, useCallback, useEffect } from 'react';
 interface StorySplitCurtainProps {
   position: number;
   onPositionChange: (pos: number) => void;
+  showClouds?: boolean;
+  onToggleClouds?: () => void;
 }
 
 export default function StorySplitCurtain({
   position,
   onPositionChange,
+  showClouds = false,
+  onToggleClouds,
 }: StorySplitCurtainProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -54,17 +58,35 @@ export default function StorySplitCurtain({
       ref={containerRef}
       className="absolute inset-0 pointer-events-none select-none z-20 overflow-hidden font-sans"
     >
-      {/* Top Left Label: What optical satellites see */}
-      <div className="absolute top-4 left-4 pointer-events-auto">
+      {/* Top Left Label & Cloud View Toggle Button */}
+      <div className="absolute top-4 left-4 pointer-events-auto flex items-center gap-2">
         <div className="bg-[#F6F5F0] border border-[#D0CEC4] rounded-md px-3 py-1.5 shadow-sm flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-[#71717A]" />
+          <span className={`w-2 h-2 rounded-full ${showClouds ? 'bg-[#71717A]' : 'bg-[#10B981]'}`} />
           <span className="text-xs font-medium text-[#121417]">
             What optical satellites see
           </span>
           <span className="text-[10px] text-[#71717A] font-normal border-l border-[#D0CEC4] pl-2">
-            Cloud-obscured view
+            {showClouds ? 'Cloud-obscured view' : 'Clear satellite view'}
           </span>
         </div>
+
+        {/* Button to toggle cloud simulation on / off */}
+        {onToggleClouds && (
+          <button
+            onClick={onToggleClouds}
+            className={`px-2.5 py-1.5 text-xs font-medium rounded-md border shadow-sm transition-all flex items-center gap-1.5 cursor-pointer select-none ${
+              showClouds
+                ? 'bg-[#0047AB] text-white border-[#0047AB] font-semibold hover:bg-[#003882]'
+                : 'bg-[#F6F5F0] text-[#121417] border-[#D0CEC4] hover:bg-[#EAE8E0]'
+            }`}
+            title={showClouds ? 'Turn off cloud view' : 'Turn on cloud-obscured simulation'}
+          >
+            <svg className="w-3.5 h-3.5 fill-none stroke-current" viewBox="0 0 24 24" strokeWidth="2">
+              <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />
+            </svg>
+            <span>{showClouds ? 'Clouds: ON' : 'Turn on clouds'}</span>
+          </button>
+        )}
       </div>
 
       {/* Top Right Label: What NISAR radar sees */}

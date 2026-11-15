@@ -79,6 +79,10 @@ export default function HomePage() {
     setTimelineStep(step);
   }, []);
 
+  // Optical satellite view cloud obscuration toggle (default FALSE for clean true-color satellite view)
+  const [showClouds, setShowClouds] = useState<boolean>(false);
+  const handleToggleClouds = useCallback(() => setShowClouds((prev) => !prev), []);
+
   // Snapshot & Modals
   const [captureTrigger, setCaptureTrigger] = useState<number>(0);
   const [snapshotToast, setSnapshotToast] = useState<string | null>(null);
@@ -182,6 +186,8 @@ export default function HomePage() {
         onBasemapChange={setBasemap}
         opacity={sarOpacity}
         onOpacityChange={setSarOpacity}
+        showClouds={showClouds}
+        onToggleClouds={handleToggleClouds}
       />
 
       {/* DUAL-MODE WORKSPACE (Height matches 48px header: h-[calc(100vh-3rem)]) */}
@@ -244,6 +250,7 @@ export default function HomePage() {
             isTimelinePlaying={isTimelinePlaying}
             curtainPosition={curtainPosition}
             mode={mode}
+            showClouds={showClouds}
           />
 
           {/* STORY MODE OVERLAYS: BEFORE/AFTER SPLIT CURTAIN & STATUS STRIP */}
@@ -252,6 +259,8 @@ export default function HomePage() {
               <StorySplitCurtain
                 position={curtainPosition}
                 onPositionChange={setCurtainPosition}
+                showClouds={showClouds}
+                onToggleClouds={handleToggleClouds}
               />
 
               <StoryStatusStrip
