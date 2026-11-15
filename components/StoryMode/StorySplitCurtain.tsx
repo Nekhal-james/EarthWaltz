@@ -24,7 +24,7 @@ export default function StorySplitCurtain({
       if (!containerRef.current) return;
       const rect = containerRef.current.getBoundingClientRect();
       const x = clientX - rect.left;
-      const pct = Math.max(2, Math.min(98, (x / rect.width) * 100));
+      const pct = Math.max(0, Math.min(100, (x / rect.width) * 100));
       onPositionChange(pct);
     },
     [onPositionChange]
@@ -56,12 +56,12 @@ export default function StorySplitCurtain({
     >
       {/* Top Left Label: What optical satellites see */}
       <div className="absolute top-4 left-4 pointer-events-auto">
-        <div className="bg-white/95 backdrop-blur-md border border-[#E2E8F0] rounded-lg px-3 py-1.5 shadow-md flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-[#94A3B8]" />
-          <span className="text-xs font-semibold text-[#0F172A]">
+        <div className="bg-[#F6F5F0] border border-[#D0CEC4] rounded-md px-3 py-1.5 shadow-sm flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-[#71717A]" />
+          <span className="text-xs font-medium text-[#121417]">
             What optical satellites see
           </span>
-          <span className="text-[10px] text-[#64748B] font-medium border-l border-[#E2E8F0] pl-2">
+          <span className="text-[10px] text-[#71717A] font-normal border-l border-[#D0CEC4] pl-2">
             Cloud-obscured view
           </span>
         </div>
@@ -69,12 +69,12 @@ export default function StorySplitCurtain({
 
       {/* Top Right Label: What NISAR radar sees */}
       <div className="absolute top-4 right-4 pointer-events-auto">
-        <div className="bg-white/95 backdrop-blur-md border border-[#E2E8F0] rounded-lg px-3 py-1.5 shadow-md flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-[#2563EB]" />
-          <span className="text-xs font-semibold text-[#0F172A]">
+        <div className="bg-[#F6F5F0] border border-[#D0CEC4] rounded-md px-3 py-1.5 shadow-sm flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-[#0047AB]" />
+          <span className="text-xs font-medium text-[#121417]">
             What NISAR radar sees
           </span>
-          <span className="text-[10px] text-[#2563EB] font-semibold border-l border-[#E2E8F0] pl-2">
+          <span className="text-[10px] text-[#0047AB] font-medium border-l border-[#D0CEC4] pl-2">
             Penetrates clouds & canopy (24 cm L-band)
           </span>
         </div>
@@ -87,10 +87,10 @@ export default function StorySplitCurtain({
         onPointerDown={handlePointerDown}
       >
         {/* Vertical Rule Line */}
-        <div className="w-[2px] h-full bg-[#2563EB] shadow-[0_0_8px_rgba(37,99,235,0.4)]" />
+        <div className="w-[2px] h-full bg-[#0047AB]" />
 
         {/* Central Tactile Cobalt Handle */}
-        <div className="absolute w-8 h-8 rounded-full bg-[#2563EB] text-white shadow-lg flex items-center justify-center border-2 border-white hover:scale-110 active:scale-95 transition-transform">
+        <div className="absolute w-8 h-8 rounded-full bg-[#0047AB] text-white shadow-md flex items-center justify-center border-2 border-[#F6F5F0] hover:scale-105 active:scale-95 transition-transform">
           <div className="flex items-center gap-0.5 text-[11px] font-bold">
             <span>‹</span>
             <span>›</span>

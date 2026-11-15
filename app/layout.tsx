@@ -1,10 +1,16 @@
 import type { Metadata } from 'next';
-import { Plus_Jakarta_Sans } from 'next/font/google';
+import { Bricolage_Grotesque, Atkinson_Hyperlegible } from 'next/font/google';
 import './globals.css';
 
-const plusJakartaSans = Plus_Jakarta_Sans({
+const bricolageGrotesque = Bricolage_Grotesque({
   subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
+  variable: '--font-display',
+  display: 'swap',
+});
+
+const atkinsonHyperlegible = Atkinson_Hyperlegible({
+  subsets: ['latin'],
+  weight: ['400', '700'],
   variable: '--font-sans',
   display: 'swap',
 });
@@ -18,10 +24,14 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={plusJakartaSans.variable} style={{ backgroundColor: '#FFFFFF', color: '#0F172A' }}>
+    <html
+      lang="en"
+      className={`${bricolageGrotesque.variable} ${atkinsonHyperlegible.variable}`}
+      style={{ backgroundColor: '#F6F5F0', color: '#121417' }}
+    >
       <body
-        style={{ backgroundColor: '#FFFFFF', color: '#0F172A', minHeight: '100vh', margin: 0 }}
-        className="bg-[#FFFFFF] text-[#0F172A] font-[family-name:var(--font-sans)] antialiased selection:bg-[#2563EB]/20 selection:text-[#0F172A]"
+        style={{ backgroundColor: '#F6F5F0', color: '#121417', minHeight: '100vh', margin: 0 }}
+        className={`${bricolageGrotesque.variable} ${atkinsonHyperlegible.variable} bg-[#F6F5F0] text-[#121417] font-sans antialiased selection:bg-[#0047AB]/20 selection:text-[#121417]`}
       >
         {children}
       </body>

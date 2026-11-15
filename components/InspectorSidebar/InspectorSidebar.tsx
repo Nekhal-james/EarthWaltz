@@ -17,21 +17,21 @@ const BAND_SPECS: Record<string, BandSpec> = {
   'L-Band': {
     wavelength: '24.0 cm',
     frequency: '1.25 GHz',
-    depth: '~1.5 m (Soil & Full Forest Canopy)',
+    depth: '~1.5 m (Soil & full forest canopy)',
     scatterers: 'Trunks, soil moisture, sub-canopy standing water',
     note: 'Deepest penetration. Penetrates dense forest canopy and deep soil layers to map ground deformation and hidden standing water.',
   },
   'S-Band': {
     wavelength: '9.3 cm',
     frequency: '3.20 GHz',
-    depth: '~30 cm (Crop Foliage & Upper Canopy)',
+    depth: '~30 cm (Crop foliage & upper canopy)',
     scatterers: 'Crop stalks, leaf clusters, paddy morphology',
     note: 'Moderate penetration. Highly sensitive to crop morphology, paddy growth stages, leaf water content, and surface roughness.',
   },
   'C-Band': {
     wavelength: '5.6 cm',
     frequency: '5.40 GHz',
-    depth: '~5 cm (Top of Canopy & Rough Surface)',
+    depth: '~5 cm (Top of canopy & rough surface)',
     scatterers: 'Canopy crowns, rough soil, burn scars, surface ripples',
     note: 'Surface scatterer. Scatters off upper canopy crowns and rough surfaces; ideal for burn scar detection and all-weather flood mapping.',
   },
@@ -69,7 +69,7 @@ export default function InspectorSidebar({
   // Sonification controls
   const { data: timeseriesData } = useTimeSeries(area.timeseries);
   const { play, stop, isPlaying, analyserRef } = useSonification();
-  const [sonificationStep, setSonificationStep] = useState(0);
+  const [, setSonificationStep] = useState(0);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const animFrameRef = useRef<number | null>(null);
 
@@ -112,7 +112,7 @@ export default function InspectorSidebar({
         dataArray.fill(0);
       }
 
-      ctx.fillStyle = '#F1F5F9';
+      ctx.fillStyle = '#F6F5F0';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       const barWidth = (canvas.width / bufferLength) * 1.5;
@@ -122,7 +122,7 @@ export default function InspectorSidebar({
         const v = dataArray[i] / 255;
         const barHeight = Math.max(2, v * canvas.height);
 
-        ctx.fillStyle = isPlaying ? '#2563EB' : '#CBD5E1';
+        ctx.fillStyle = isPlaying ? '#0047AB' : '#D0CEC4';
         ctx.fillRect(x, canvas.height - barHeight, barWidth - 1, barHeight);
         x += barWidth;
       }
@@ -172,85 +172,85 @@ export default function InspectorSidebar({
   };
 
   return (
-    <aside className="w-80 h-[calc(100vh-3.5rem)] bg-[#FFFFFF] border-r border-[#E2E8F0] flex flex-col z-30 overflow-y-auto select-none font-sans shadow-sm">
+    <aside className="w-80 h-[calc(100vh-3rem)] bg-[#F6F5F0] border-r border-[#D0CEC4] flex flex-col z-30 overflow-y-auto select-none font-sans">
       {/* SECTION A: STUDY AREA CONTEXT & PROVENANCE */}
-      <section className="p-4 border-b border-[#E2E8F0] flex flex-col gap-2.5">
+      <section className="p-4 border-b border-[#D0CEC4] flex flex-col gap-2.5">
         <div>
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold text-[#64748B]">
+            <span className="text-[11px] font-medium text-[#121417]/70">
               Study area
             </span>
             {area.hometown && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#2563EB]/10 border border-[#2563EB]/20 text-[#2563EB] font-semibold">
-                Hometown Focus
+              <span className="text-[10px] px-1.5 py-0.5 bg-[#0047AB]/10 border border-[#0047AB]/30 text-[#0047AB] font-semibold">
+                Hometown focus
               </span>
             )}
           </div>
-          <h2 className="text-base font-bold text-[#0F172A] mt-0.5">{area.name}</h2>
-          <p className="text-xs text-[#64748B] mt-0.5">{area.phenomenon}</p>
+          <h2 className="text-base font-bold text-[#121417] mt-0.5">{area.name}</h2>
+          <p className="text-xs text-[#121417]/70 mt-0.5">{area.phenomenon}</p>
         </div>
 
         {/* Plain-English Scientific Narrative */}
-        <p className="text-xs text-[#334155] leading-relaxed">
+        <p className="text-xs text-[#121417]/85 leading-relaxed">
           {area.narrative || area.description}
         </p>
 
-        {/* Provenance Card */}
-        <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-2.5 flex flex-col gap-1.5 text-xs">
+        {/* Provenance Block */}
+        <div className="bg-[#EAE8E0] border border-[#D0CEC4] p-2.5 flex flex-col gap-1.5 text-xs">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold text-[#64748B]">Data provenance</span>
-            <span className="text-[10px] text-[#2563EB] font-semibold">
+            <span className="text-[11px] font-medium text-[#121417]/70">Data provenance</span>
+            <span className="text-[10px] text-[#0047AB] font-semibold">
               {area.provenance?.orbit_direction || 'Ascending'}
             </span>
           </div>
 
-          <div className="font-mono text-[11px] text-[#0F172A] truncate tabular-nums" title={area.provenance?.granule_id}>
+          <div className="font-mono text-[11px] text-[#121417] truncate tabular-nums" title={area.provenance?.granule_id}>
             ID: {area.provenance?.granule_id || 'ALAV2A278633410'}
           </div>
 
-          <div className="text-[11px] text-[#64748B] truncate">
-            {area.provenance?.platform || 'NISAR L-Band (24 cm)'}
+          <div className="text-[11px] text-[#121417]/70 truncate">
+            {area.provenance?.platform || 'NISAR L-band (24 cm)'}
           </div>
 
-          <div className="flex items-center gap-3 pt-1 border-t border-[#E2E8F0] text-[11px]">
+          <div className="flex items-center gap-3 pt-1 border-t border-[#D0CEC4] text-[11px]">
             <a
               href={area.provenance?.vertex_url || 'https://search.asf.alaska.edu/'}
               target="_blank"
               rel="noreferrer"
-              className="text-[#2563EB] font-medium hover:underline"
+              className="text-[#0047AB] font-medium hover:underline"
             >
-              ASF Vertex ↗
+              ASF Vertex
             </a>
             <a
               href={area.provenance?.earthdata_search_url || 'https://search.earthdata.nasa.gov/'}
               target="_blank"
               rel="noreferrer"
-              className="text-[#64748B] hover:text-[#0F172A] hover:underline"
+              className="text-[#121417]/70 hover:text-[#121417] hover:underline"
             >
-              Earthdata Search ↗
+              Earthdata Search
             </a>
           </div>
         </div>
       </section>
 
       {/* SECTION B: RADAR CHANNEL & FREQUENCY */}
-      <section className="p-4 border-b border-[#E2E8F0] flex flex-col gap-3">
+      <section className="p-4 border-b border-[#D0CEC4] flex flex-col gap-3">
         <div>
-          <span className="text-[11px] font-semibold text-[#64748B]">
+          <span className="text-[11px] font-medium text-[#121417]/70">
             Radar frequency
           </span>
           {/* Frequency Tabs */}
-          <div className="grid grid-cols-3 gap-1 bg-[#F1F5F9] border border-[#E2E8F0] rounded-lg p-0.5 mt-1.5">
+          <div className="grid grid-cols-3 gap-1 bg-[#EAE8E0] border border-[#D0CEC4] p-0.5 mt-1.5">
             {['L-Band', 'S-Band', 'C-Band'].map((band) => {
               const isSelected = selectedBand === band;
               return (
                 <button
                   key={band}
                   onClick={() => handleFrequencySelect(band)}
-                  className={`py-1 text-[11px] font-medium rounded-md transition-colors text-center ${
+                  className={`py-1 text-[11px] font-medium transition-colors text-center ${
                     isSelected
-                      ? 'bg-[#FFFFFF] text-[#0F172A] shadow-sm font-semibold'
-                      : 'text-[#64748B] hover:text-[#0F172A] hover:bg-[#FFFFFF]/50'
+                      ? 'bg-[#0047AB] text-white font-semibold'
+                      : 'text-[#121417]/70 hover:text-[#121417] hover:bg-[#D0CEC4]/40'
                   }`}
                 >
                   {band}
@@ -261,18 +261,18 @@ export default function InspectorSidebar({
 
           {/* Dynamic Frequency Physics Spec */}
           {BAND_SPECS[selectedBand] && (
-            <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-2.5 flex flex-col gap-1.5 mt-2">
+            <div className="bg-[#EAE8E0] border border-[#D0CEC4] p-2.5 flex flex-col gap-1.5 mt-2">
               <div className="flex items-center justify-between text-[11px]">
-                <span className="text-[#64748B]">Wavelength:</span>
-                <span className="font-mono text-[#2563EB] font-bold tabular-nums">
+                <span className="text-[#121417]/70">Wavelength:</span>
+                <span className="font-mono text-[#0047AB] font-bold tabular-nums">
                   {BAND_SPECS[selectedBand].wavelength} ({BAND_SPECS[selectedBand].frequency})
                 </span>
               </div>
               <div className="flex items-center justify-between text-[11px]">
-                <span className="text-[#64748B]">Penetration depth:</span>
-                <span className="text-[#0F172A] font-medium">{BAND_SPECS[selectedBand].depth}</span>
+                <span className="text-[#121417]/70">Penetration depth:</span>
+                <span className="text-[#121417] font-medium">{BAND_SPECS[selectedBand].depth}</span>
               </div>
-              <p className="text-[10px] text-[#64748B] leading-snug pt-1.5 border-t border-[#E2E8F0]">
+              <p className="text-[10px] text-[#121417]/70 leading-snug pt-1.5 border-t border-[#D0CEC4]">
                 {BAND_SPECS[selectedBand].note}
               </p>
             </div>
@@ -281,7 +281,7 @@ export default function InspectorSidebar({
 
         {/* Radio-style List for Polarization Channels */}
         <div className="flex flex-col gap-1.5 pt-1">
-          <span className="text-[11px] font-semibold text-[#64748B]">
+          <span className="text-[11px] font-medium text-[#121417]/70">
             Radar channels
           </span>
           <div className="flex flex-col gap-1">
@@ -292,23 +292,23 @@ export default function InspectorSidebar({
                 <button
                   key={key}
                   onClick={() => onSelectLayer(key)}
-                  className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left transition-colors border ${
+                  className={`w-full flex items-center justify-between px-2.5 py-1.5 text-left transition-colors border ${
                     isSelected
-                      ? 'bg-[#F1F5F9] border-[#CBD5E1] text-[#0F172A] font-medium'
-                      : 'border-transparent text-[#475569] hover:bg-[#F8FAFC] hover:text-[#0F172A]'
+                      ? 'bg-[#EAE8E0] border-[#D0CEC4] text-[#121417] font-medium'
+                      : 'border-transparent text-[#121417]/80 hover:bg-[#EAE8E0]/60 hover:text-[#121417]'
                   }`}
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     <div
                       className={`w-3 h-3 rounded-full border flex items-center justify-center shrink-0 ${
-                        isSelected ? 'border-[#2563EB]' : 'border-[#CBD5E1]'
+                        isSelected ? 'border-[#0047AB]' : 'border-[#D0CEC4] bg-white'
                       }`}
                     >
-                      {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-[#2563EB]" />}
+                      {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-[#0047AB]" />}
                     </div>
                     <span className="text-xs truncate">{layer.label}</span>
                   </div>
-                  <span className="font-mono text-[10px] text-[#64748B] shrink-0 ml-2">
+                  <span className="font-mono text-[10px] text-[#121417]/60 shrink-0 ml-2">
                     {layer.unit}
                   </span>
                 </button>
@@ -322,7 +322,7 @@ export default function InspectorSidebar({
       <section className="p-4 pb-14 flex flex-col gap-3.5">
         {/* Context Overlays */}
         <div className="flex flex-col gap-1.5">
-          <span className="text-[11px] font-semibold text-[#64748B]">
+          <span className="text-[11px] font-medium text-[#121417]/70">
             Map overlays
           </span>
           <div className="flex flex-col gap-1">
@@ -331,13 +331,13 @@ export default function InspectorSidebar({
               return (
                 <label
                   key={layer.id}
-                  className="flex items-center gap-2.5 py-1 px-1 rounded-md hover:bg-[#F8FAFC] cursor-pointer text-xs text-[#475569] hover:text-[#0F172A] transition-colors"
+                  className="flex items-center gap-2.5 py-1 px-1 hover:bg-[#EAE8E0] cursor-pointer text-xs text-[#121417]/80 hover:text-[#121417] transition-colors"
                 >
                   <input
                     type="checkbox"
                     checked={isChecked}
                     onChange={() => onToggleAncillary(layer.id)}
-                    className="w-3.5 h-3.5 rounded border-[#CBD5E1] text-[#2563EB] focus:ring-0 focus:ring-offset-0 cursor-pointer"
+                    className="w-3.5 h-3.5 border-[#D0CEC4] text-[#0047AB] accent-[#0047AB] focus:ring-0 focus:ring-offset-0 cursor-pointer"
                   />
                   <span className="truncate">{layer.label}</span>
                 </label>
@@ -347,21 +347,21 @@ export default function InspectorSidebar({
         </div>
 
         {/* Surface Sonification Single-Row Player */}
-        <div className="border-t border-[#E2E8F0] pt-3 flex flex-col gap-2">
-          <span className="text-[11px] font-semibold text-[#64748B]">
+        <div className="border-t border-[#D0CEC4] pt-3 flex flex-col gap-2">
+          <span className="text-[11px] font-medium text-[#121417]/70">
             Audio sonification
           </span>
 
-          <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-2.5 flex items-center justify-between gap-3">
+          <div className="bg-[#EAE8E0] border border-[#D0CEC4] p-2.5 flex items-center justify-between gap-3">
             <button
               onClick={handleSonificationToggle}
-              className={`px-3 py-1 text-xs font-semibold rounded-md border transition-colors shrink-0 ${
+              className={`px-3 py-1 text-xs font-semibold border transition-colors shrink-0 ${
                 isPlaying
-                  ? 'bg-[#EF4444] text-white border-[#EF4444]'
-                  : 'bg-[#2563EB] text-white border-[#2563EB] hover:bg-[#1D4ED8]'
+                  ? 'bg-[#121417] text-white border-[#121417]'
+                  : 'bg-[#0047AB] text-white border-[#0047AB] hover:bg-[#003882]'
               }`}
             >
-              {isPlaying ? 'Pause Audio' : 'Play Audio'}
+              {isPlaying ? 'Pause audio' : 'Play audio'}
             </button>
 
             {/* Mini Waveform Visualizer */}
@@ -369,11 +369,11 @@ export default function InspectorSidebar({
               ref={canvasRef}
               width={110}
               height={26}
-              className="bg-[#F1F5F9] border border-[#E2E8F0] rounded shrink-0"
+              className="bg-[#F6F5F0] border border-[#D0CEC4] shrink-0"
             />
           </div>
 
-          <p className="text-[10px] text-[#64748B] leading-tight">
+          <p className="text-[10px] text-[#121417]/70 leading-tight">
             Synthesizes radar backscatter timeseries into audio frequency (60 Hz – 1.2 kHz).
           </p>
         </div>

@@ -6,7 +6,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import type { StudyArea, LayerInfo, BasemapStyle } from '@/types';
 import { ANCILLARY_DATA_BY_AREA } from './AncillaryData';
 
-// Esri World Imagery + Esri Reference Boundaries (Zero watermark, zero API key required)
+// Bottom Map (Radar): Esri World Imagery darkened with topographic contrast
 const ESRI_SATELLITE_STYLE: maplibregl.StyleSpecification = {
   version: 8,
   sources: {
@@ -36,6 +36,10 @@ const ESRI_SATELLITE_STYLE: maplibregl.StyleSpecification = {
       source: 'esri-world-imagery',
       minzoom: 0,
       maxzoom: 22,
+      paint: {
+        'raster-brightness-max': 0.82,
+        'raster-contrast': 0.25,
+      },
     },
     {
       id: 'esri-reference-layer',
@@ -48,7 +52,68 @@ const ESRI_SATELLITE_STYLE: maplibregl.StyleSpecification = {
   ],
 };
 
-// Esri Dark Gray Canvas Base + Reference (Zero watermark, zero API key required)
+// Top Map (Optical): Bright True-Color optical satellite imagery + live NASA GIBS Cloud WMTS layer
+const OPTICAL_MAP_STYLE: maplibregl.StyleSpecification = {
+  version: 8,
+  sources: {
+    'esri-optical-imagery': {
+      type: 'raster',
+      tiles: [
+        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      ],
+      tileSize: 256,
+      attribution: '© Esri, Maxar',
+      maxzoom: 19,
+    },
+    'nasa-gibs-clouds': {
+      type: 'raster',
+      tiles: [
+        'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/2025-07-15/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg',
+      ],
+      tileSize: 256,
+      attribution: '© NASA EOSDIS GIBS',
+      maxzoom: 9,
+    },
+    'esri-reference': {
+      type: 'raster',
+      tiles: [
+        'https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+      ],
+      tileSize: 256,
+      attribution: '© Esri',
+      maxzoom: 19,
+    },
+  },
+  layers: [
+    {
+      id: 'esri-optical-imagery-layer',
+      type: 'raster',
+      source: 'esri-optical-imagery',
+      minzoom: 0,
+      maxzoom: 22,
+    },
+    {
+      id: 'nasa-gibs-cloud-layer',
+      type: 'raster',
+      source: 'nasa-gibs-clouds',
+      minzoom: 0,
+      maxzoom: 22,
+      paint: {
+        'raster-opacity': 0.55,
+      },
+    },
+    {
+      id: 'esri-reference-layer',
+      type: 'raster',
+      source: 'esri-reference',
+      minzoom: 0,
+      maxzoom: 22,
+      paint: { 'raster-opacity': 0.85 },
+    },
+  ],
+};
+
+// Additional Basemaps for Workbench Mode
 const ESRI_DARK_STYLE: maplibregl.StyleSpecification = {
   version: 8,
   sources: {
@@ -90,7 +155,6 @@ const ESRI_DARK_STYLE: maplibregl.StyleSpecification = {
   ],
 };
 
-// NASA VIIRS SNPP True-Color composite + Esri Reference (Zero orbital zebra stripes)
 const GIBS_TRUECOLOR_STYLE: maplibregl.StyleSpecification = {
   version: 8,
   sources: {
@@ -132,7 +196,6 @@ const GIBS_TRUECOLOR_STYLE: maplibregl.StyleSpecification = {
   ],
 };
 
-// Esri Light Gray Canvas Base + Reference (Zero watermark, zero API key required)
 const ESRI_LIGHT_STYLE: maplibregl.StyleSpecification = {
   version: 8,
   sources: {
@@ -225,24 +288,55 @@ export default function Globe({
   timelineIndex = 0,
   selectedBand = 'L-Band',
   isTimelinePlaying = false,
-  curtainPosition = 35,
+  curtainPosition = 38,
   mode = 'story',
 }: GlobeProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<maplibregl.Map | null>(null);
+  const radarContainerRef = useRef<HTMLDivElement>(null);
+  const opticalContainerRef = useRef<HTMLDivElement>(null);
+
+  const radarMapRef = useRef<maplibregl.Map | null>(null);
+  const opticalMapRef = useRef<maplibregl.Map | null>(null);
+  const isSyncingRef = useRef<boolean>(false);
   const markersRef = useRef<maplibregl.Marker[]>([]);
   const isLoadedRef = useRef(false);
 
-  // Cached base image element for offscreen dynamic canvas frame modulation
-  const baseImageRef = useRef<HTMLImageElement | null>(null);
-  const offscreenCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  // Helper to extract 4-point bounding box coordinates for raster image overlays
+  const getBboxCoordinates = (area: StudyArea): [[number, number], [number, number], [number, number], [number, number]] => {
+    const bbox = area.bbox || [
+      area.lng - 0.45,
+      area.lat - 0.40,
+      area.lng + 0.45,
+      area.lat + 0.40,
+    ];
+    const [west, south, east, north] = bbox;
+    return [
+      [west, north], // Top-Left
+      [east, north], // Top-Right
+      [east, south], // Bottom-Right
+      [west, south], // Bottom-Left
+    ];
+  };
 
-  // Viewport alignment: Tight ~85km swath framing at Zoom 10.0 (fills 80% of viewport)
+  // Bidirectional camera synchronization using isSyncing lock and jumpTo
+  const syncCamera = useCallback((source: maplibregl.Map, target: maplibregl.Map) => {
+    if (isSyncingRef.current) return;
+    isSyncingRef.current = true;
+    target.jumpTo({
+      center: source.getCenter(),
+      zoom: source.getZoom(),
+      bearing: source.getBearing(),
+      pitch: source.getPitch(),
+    });
+    isSyncingRef.current = false;
+  }, []);
+
+  // Frame lock to active area center at zoom 10.0, pitch 18, bearing 0
   const fitAreaBounds = useCallback((area: StudyArea, duration = 1100) => {
-    const map = mapRef.current;
-    if (!map) return;
+    const radarMap = radarMapRef.current;
+    if (!radarMap) return;
 
-    map.flyTo({
+    radarMap.flyTo({
       center: [area.lng, area.lat],
       zoom: 10.0,
       pitch: 18,
@@ -252,185 +346,9 @@ export default function Globe({
     });
   }, []);
 
-  // Modulate SAR raster pixel data on timeline step or frequency band changes
-  const updateModulatedRaster = useCallback((stepIndex: number, band: string) => {
-    const map = mapRef.current;
-    const img = baseImageRef.current;
-    if (!map || !map.isStyleLoaded() || !img) return;
-
-    const source = map.getSource('sar-overlay') as maplibregl.ImageSource | undefined;
-    if (!source) return;
-
-    if (!offscreenCanvasRef.current) {
-      offscreenCanvasRef.current = document.createElement('canvas');
-    }
-    const canvas = offscreenCanvasRef.current;
-    const w = img.naturalWidth || img.width || 512;
-    const h = img.naturalHeight || img.height || 512;
-    if (canvas.width !== w || canvas.height !== h) {
-      canvas.width = w;
-      canvas.height = h;
-    }
-
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    if (!ctx) return;
-
-    ctx.drawImage(img, 0, 0, w, h);
-
-    try {
-      const imgData = ctx.getImageData(0, 0, w, h);
-      const data = imgData.data;
-      const areaId = activeArea.id;
-
-      if (areaId === 'kerala' || areaId === 'kerala_floods') {
-        // Monsoon flood surge in steps 3-8 over Kuttanad / Vembanad wetland depression
-        const floodFactor =
-          stepIndex >= 3 && stepIndex <= 8
-            ? Math.sin(((stepIndex - 3) / 5) * Math.PI) * 0.75
-            : 0;
-
-        if (floodFactor > 0.05) {
-          for (let i = 0; i < data.length; i += 4) {
-            const a = data[i + 3];
-            if (a === 0) continue;
-            const r = data[i];
-            const g = data[i + 1];
-            const b = data[i + 2];
-            const brightness = (r + g + b) / 3;
-
-            // Low-lying land inundated by water suffers strong specular absorption (darkens)
-            if (brightness < 145) {
-              const att = 1.0 - floodFactor * (1.0 - brightness / 145);
-              data[i] = Math.max(10, Math.round(r * att));
-              data[i + 1] = Math.max(15, Math.round(g * att));
-              data[i + 2] = Math.max(30, Math.round(b * att * 0.85 + 24 * floodFactor));
-            }
-          }
-        }
-      } else if (areaId === 'turkey' || areaId === 'turkey_earthquake') {
-        // InSAR fringe phase rotation along the East Anatolian Fault line
-        const phaseShift = ((stepIndex % 12) / 12) * Math.PI * 2;
-        const sinP = Math.sin(phaseShift);
-        const cosP = Math.cos(phaseShift);
-        for (let i = 0; i < data.length; i += 4) {
-          if (data[i + 3] === 0) continue;
-          const r = data[i];
-          const g = data[i + 1];
-          const b = data[i + 2];
-          data[i] = Math.min(255, Math.max(0, Math.round(r * (0.8 + 0.2 * cosP) + g * (0.2 * sinP))));
-          data[i + 1] = Math.min(255, Math.max(0, Math.round(g * (0.8 + 0.2 * cosP) + b * (0.2 * sinP))));
-          data[i + 2] = Math.min(255, Math.max(0, Math.round(b * (0.8 + 0.2 * cosP) + r * (0.2 * sinP))));
-        }
-      } else if (areaId === 'amazon' || areaId === 'amazon_deforestation') {
-        // Deforestation expansion: patches transition from high volume scattering to clearcut
-        const deforestProg = stepIndex / 11;
-        for (let i = 0; i < data.length; i += 4) {
-          if (data[i + 3] === 0) continue;
-          const px = (i / 4) % w;
-          const py = Math.floor(i / 4 / w);
-          const patchHash = Math.abs(Math.sin(px * 12.9898 + py * 78.233) * 43758.5453);
-          const patchVal = patchHash - Math.floor(patchHash);
-          if (patchVal < deforestProg * 0.22) {
-            data[i] = Math.round(data[i] * 0.72);
-            data[i + 1] = Math.round(data[i + 1] * 0.68);
-            data[i + 2] = Math.round(data[i + 2] * 0.72);
-          }
-        }
-      } else {
-        // Seasonal phenology oscillation
-        const mod = 1.0 + Math.sin((stepIndex / 12) * Math.PI * 2) * 0.12;
-        for (let i = 0; i < data.length; i += 4) {
-          if (data[i + 3] === 0) continue;
-          data[i] = Math.min(255, Math.round(data[i] * mod));
-          data[i + 1] = Math.min(255, Math.round(data[i + 1] * mod));
-          data[i + 2] = Math.min(255, Math.round(data[i + 2] * mod));
-        }
-      }
-
-      // Frequency Wavelength Scattering adjustments:
-      // S-band (9.3cm) and C-band (5.6cm) have shorter wavelengths -> higher surface roughness response
-      if (band === 'S-Band') {
-        for (let i = 0; i < data.length; i += 4) {
-          if (data[i + 3] === 0) continue;
-          data[i] = Math.min(255, Math.round(data[i] * 1.08));
-          data[i + 1] = Math.min(255, Math.round(data[i + 1] * 1.04));
-        }
-      } else if (band === 'C-Band') {
-        for (let i = 0; i < data.length; i += 4) {
-          if (data[i + 3] === 0) continue;
-          data[i + 1] = Math.min(255, Math.round(data[i + 1] * 1.10));
-          data[i + 2] = Math.min(255, Math.round(data[i + 2] * 1.14));
-        }
-      }
-
-      const bbox = activeArea.bbox || [
-        activeArea.lng - 0.45,
-        activeArea.lat - 0.40,
-        activeArea.lng + 0.45,
-        activeArea.lat + 0.40,
-      ];
-      const [west, south, east, north] = bbox;
-
-      // -----------------------------------------------------------------
-      // REAL-TIME SPLIT CURTAIN CLIPPING: Optical Clouds vs. NISAR Radar
-      // -----------------------------------------------------------------
-      if (mode === 'story' && containerRef.current && map) {
-        const containerWidth = containerRef.current.clientWidth || 800;
-        const containerHeight = containerRef.current.clientHeight || 600;
-        const curtainScreenX = ((curtainPosition ?? 35) / 100) * containerWidth;
-        const curtainLng = map.unproject([curtainScreenX, containerHeight / 2]).lng;
-
-        const splitFraction = (curtainLng - west) / (east - west);
-        const splitPx = Math.floor(splitFraction * w);
-
-        if (splitPx > 0) {
-          // Render soft atmospheric/monsoon cloud wisps on the left of the split line
-          for (let y = 0; y < h; y++) {
-            const ny = y / h;
-            for (let x = 0; x < Math.min(w, splitPx); x++) {
-              const nx = x / w;
-              const idx = (y * w + x) * 4;
-
-              // Fractal multi-scale billowy cloud noise
-              const n1 = Math.sin(nx * 14.0 + ny * 11.0) * Math.cos(ny * 17.0 - nx * 8.0);
-              const n2 = Math.sin(nx * 31.0 + ny * 26.0) * 0.5;
-              const cloudVal = Math.max(0, Math.min(1, (n1 + n2 + 1.4) / 2.8));
-
-              // Soft cloud boundary near the vertical divider
-              const distFromDivider = splitPx - x;
-              const edgeFade = distFromDivider < 12 ? distFromDivider / 12 : 1.0;
-
-              // Opaque white cloud banks (alpha 185 to 245) obscuring optical terrain
-              const cloudAlpha = Math.round((185 + cloudVal * 60) * edgeFade);
-
-              data[idx] = Math.round(246 + cloudVal * 8);       // R
-              data[idx + 1] = Math.round(249 + cloudVal * 6);   // G
-              data[idx + 2] = 255;                              // B
-              data[idx + 3] = cloudAlpha;                       // Alpha
-            }
-          }
-        }
-      }
-
-      ctx.putImageData(imgData, 0, 0);
-      const dataUrl = canvas.toDataURL('image/webp', 0.85);
-
-      const swathCoords: [[number, number], [number, number], [number, number], [number, number]] = [
-        [west, north],
-        [east, north],
-        [east, south],
-        [west, south],
-      ];
-      source.setCoordinates(swathCoords);
-      source.updateImage({ url: dataUrl, coordinates: swathCoords });
-    } catch (err) {
-      console.warn('Canvas modulation update error:', err);
-    }
-  }, [activeArea, curtainPosition, mode]);
-
-  // Render Ancillary Context Overlays (Human Settlements, Agriculture, Infrastructure)
+  // Render Ancillary Context Overlays on radarMap (Settlements, Agriculture, Infrastructure)
   const renderAncillaryLayers = useCallback(() => {
-    const map = mapRef.current;
+    const map = radarMapRef.current;
     if (!map || !map.isStyleLoaded()) return;
 
     const data = ANCILLARY_DATA_BY_AREA[activeArea.id] || ANCILLARY_DATA_BY_AREA.kerala;
@@ -506,7 +424,7 @@ export default function Globe({
       });
     }
 
-    // 3. Human Settlements (Glowing Circles & Labels)
+    // 3. Human Settlements (Halo, Circles & Labels)
     if (map.getSource('ancillary-population-src')) {
       (map.getSource('ancillary-population-src') as maplibregl.GeoJSONSource).setData(data.population);
     } else {
@@ -562,12 +480,11 @@ export default function Globe({
     }
   }, [activeArea.id, ancillaryVisible]);
 
-  // Render native MapLibre image raster (organic, zero bounding-box border)
-  const renderSarOverlay = useCallback(() => {
-    const map = mapRef.current;
+  // Render active SAR Overlay onto radarMapRef (Bottom Map)
+  const renderRadarOverlays = useCallback(() => {
+    const map = radarMapRef.current;
     if (!map || !map.isStyleLoaded()) return;
 
-    // Never skip rendering if activeLayer hasn't synced yet—always fallback to valid layer in activeArea
     const layerObj =
       activeLayer ||
       (activeArea.default_layer && activeArea.layers[activeArea.default_layer]) ||
@@ -575,21 +492,7 @@ export default function Globe({
 
     if (!layerObj) return;
 
-    const bbox = activeArea.bbox || [
-      activeArea.lng - 0.45,
-      activeArea.lat - 0.40,
-      activeArea.lng + 0.45,
-      activeArea.lat + 0.40,
-    ];
-    const [west, south, east, north] = bbox;
-
-    const coordinates: [[number, number], [number, number], [number, number], [number, number]] = [
-      [west, north], // Top-Left
-      [east, north], // Top-Right
-      [east, south], // Bottom-Right
-      [west, south], // Bottom-Left
-    ];
-
+    const coordinates = getBboxCoordinates(activeArea);
     const imagePath = `/data/${layerObj.image}`;
     const targetOpacity = Math.max(0.85, opacity);
 
@@ -597,7 +500,7 @@ export default function Globe({
       const existingSource = map.getSource('sar-overlay') as maplibregl.ImageSource | undefined;
       if (existingSource) {
         existingSource.setCoordinates(coordinates);
-        existingSource.updateImage({ url: imagePath, coordinates: coordinates });
+        existingSource.updateImage({ url: imagePath, coordinates });
         if (map.getLayer('sar-overlay-layer')) {
           map.setPaintProperty('sar-overlay-layer', 'raster-opacity', targetOpacity);
         }
@@ -608,7 +511,8 @@ export default function Globe({
           coordinates: coordinates,
         });
 
-        // Insert raster layer before ancillary layers so context overlays render cleanly on top
+        // Insert before ancillary layers so context vectors render on top
+        const beforeLayer = map.getLayer('ancillary-agriculture-fill') ? 'ancillary-agriculture-fill' : undefined;
         map.addLayer(
           {
             id: 'sar-overlay-layer',
@@ -622,37 +526,348 @@ export default function Globe({
               'raster-brightness-min': 0.04,
             },
           },
-          map.getLayer('ancillary-agriculture-fill') ? 'ancillary-agriculture-fill' : undefined
+          beforeLayer
         );
       }
 
-      // Reset cached base image and reload immediately for smooth timeline modulation
-      baseImageRef.current = null;
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.src = imagePath;
-      img.onload = () => {
-        baseImageRef.current = img;
-        updateModulatedRaster(timelineIndex, selectedBand);
-      };
-
-      // Ensure ancillary context layers are active and rendered on top
       renderAncillaryLayers();
     } catch (err) {
-      console.warn('MapLibre overlay render warning:', err);
+      console.warn('Radar overlay render warning:', err);
     }
-  }, [activeArea, activeLayer, opacity, timelineIndex, selectedBand, updateModulatedRaster, renderAncillaryLayers]);
+  }, [activeArea, activeLayer, opacity, renderAncillaryLayers]);
 
-  // Update modulated raster when timeline index, frequency band, curtain position, or mode changes
-  useEffect(() => {
-    if (baseImageRef.current) {
-      updateModulatedRaster(timelineIndex, selectedBand);
+  // Render optical cloud deck onto opticalMapRef (Top Map)
+  // CRITICAL: sar-overlay is NEVER added to opticalMapRef
+  const renderOpticalOverlays = useCallback(() => {
+    const map = opticalMapRef.current;
+    if (!map || !map.isStyleLoaded()) return;
+
+    if (!activeArea.optical_cloudy) return;
+
+    const coordinates = getBboxCoordinates(activeArea);
+    const cloudImagePath = `/data/${activeArea.optical_cloudy}`;
+
+    try {
+      const existingCloudSource = map.getSource('optical-cloud-deck') as maplibregl.ImageSource | undefined;
+      if (existingCloudSource) {
+        existingCloudSource.setCoordinates(coordinates);
+        existingCloudSource.updateImage({ url: cloudImagePath, coordinates });
+      } else {
+        map.addSource('optical-cloud-deck', {
+          type: 'image',
+          url: cloudImagePath,
+          coordinates: coordinates,
+        });
+
+        // Insert below reference labels so labels stay readable
+        const beforeRef = map.getLayer('esri-reference-layer') ? 'esri-reference-layer' : undefined;
+        map.addLayer(
+          {
+            id: 'optical-cloud-deck-layer',
+            type: 'raster',
+            source: 'optical-cloud-deck',
+            paint: {
+              'raster-opacity': 0.85,
+              'raster-resampling': 'linear',
+              'raster-fade-duration': 150,
+            },
+          },
+          beforeRef
+        );
+      }
+    } catch (err) {
+      console.warn('Optical cloud deck render warning:', err);
     }
-  }, [timelineIndex, selectedBand, curtainPosition, mode, updateModulatedRaster]);
+  }, [activeArea]);
+
+  // High-resolution dual-layer snapshot export combining radar and optical maps with curtain divider
+  const exportSnapshot = useCallback(() => {
+    const radarMap = radarMapRef.current;
+    const opticalMap = opticalMapRef.current;
+    if (!radarMap) return;
+
+    const radarCanvas = radarMap.getCanvas();
+    const exportCanvas = document.createElement('canvas');
+    exportCanvas.width = radarCanvas.width;
+    exportCanvas.height = radarCanvas.height;
+    const ctx = exportCanvas.getContext('2d');
+    if (!ctx) return;
+
+    // 1. Draw bottom radar map
+    ctx.drawImage(radarCanvas, 0, 0);
+
+    // 2. In story mode, composite top optical map clipped by curtain position
+    if (mode === 'story' && opticalMap) {
+      const opticalCanvas = opticalMap.getCanvas();
+      const splitX = Math.round(((curtainPosition ?? 38) / 100) * exportCanvas.width);
+
+      if (splitX > 0) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(0, 0, splitX, exportCanvas.height);
+        ctx.clip();
+        ctx.drawImage(opticalCanvas, 0, 0);
+        ctx.restore();
+
+        // 2px Cobalt divider line
+        ctx.strokeStyle = '#0047AB';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(splitX, 0);
+        ctx.lineTo(splitX, exportCanvas.height);
+        ctx.stroke();
+      }
+    }
+
+    // 3. Swiss Cartographic metadata banner
+    const pad = 24;
+    const bannerW = 440;
+    const bannerH = 104;
+    const bannerX = pad;
+    const bannerY = pad;
+
+    // Alabaster Vellum background card with Survey Rule border
+    ctx.fillStyle = 'rgba(246, 245, 240, 0.96)';
+    ctx.fillRect(bannerX, bannerY, bannerW, bannerH);
+    ctx.strokeStyle = '#D0CEC4';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(bannerX, bannerY, bannerW, bannerH);
+
+    // International Cobalt accent rule
+    ctx.fillStyle = '#0047AB';
+    ctx.fillRect(bannerX, bannerY, bannerW, 3);
+
+    // Header brand
+    ctx.fillStyle = '#0047AB';
+    ctx.font = 'bold 11px sans-serif';
+    ctx.fillText('EarthWaltz Observatory · NASA-ISRO NISAR', bannerX + 14, bannerY + 22);
+
+    // Region title
+    ctx.fillStyle = '#121417';
+    ctx.font = 'bold 15px sans-serif';
+    ctx.fillText(activeArea.name, bannerX + 14, bannerY + 44);
+
+    // Phenomenon & Layer details
+    ctx.fillStyle = '#52525B';
+    ctx.font = '11px sans-serif';
+    ctx.fillText(
+      `${activeArea.phenomenon} · ${activeLayer?.label || 'SAR'} (${activeLayer?.unit || 'dB'}) [${selectedBand}]`,
+      bannerX + 14,
+      bannerY + 66
+    );
+
+    // Granule ID & Sensor provenance
+    ctx.fillStyle = '#71717A';
+    ctx.font = '10px monospace';
+    ctx.fillText(
+      `Sensor: ${activeArea.provenance?.platform || 'NISAR L-Band'} | ID: ${activeArea.provenance?.granule_id || 'ALPSRP278380480'}`,
+      bannerX + 14,
+      bannerY + 88
+    );
+
+    const filename = `EarthWaltz_${activeArea.id}_${activeLayer?.label || 'SAR'}_${new Date().toISOString().slice(0, 10)}.png`;
+    const link = document.createElement('a');
+    link.download = filename;
+    link.href = exportCanvas.toDataURL('image/png');
+    link.click();
+
+    onSnapshotExported?.(filename);
+  }, [activeArea, activeLayer, selectedBand, mode, curtainPosition, onSnapshotExported]);
+
+  // Trigger snapshot export from props
+  useEffect(() => {
+    if (captureTrigger > 0) {
+      exportSnapshot();
+    }
+  }, [captureTrigger, exportSnapshot]);
+
+  // Initialize Dual MapLibre GL JS instances
+  useEffect(() => {
+    if (!radarContainerRef.current || !opticalContainerRef.current) return;
+
+    // 1. Bottom Radar Map
+    const radarMap = new maplibregl.Map({
+      container: radarContainerRef.current,
+      style: BASEMAPS[basemap]?.style || ESRI_SATELLITE_STYLE,
+      center: [activeArea.lng, activeArea.lat],
+      zoom: 10.0,
+      pitch: 18,
+      bearing: 0,
+      attributionControl: false,
+      renderWorldCopies: false,
+      preserveDrawingBuffer: true,
+    });
+
+    radarMap.addControl(new maplibregl.NavigationControl({ showCompass: true }), 'bottom-right');
+    radarMap.addControl(
+      new maplibregl.AttributionControl({ compact: true, customAttribution: 'EarthWaltz · NASA EOSDIS · ISRO' }),
+      'bottom-right'
+    );
+
+    // 2. Top Optical Map
+    const opticalMap = new maplibregl.Map({
+      container: opticalContainerRef.current,
+      style: OPTICAL_MAP_STYLE,
+      center: [activeArea.lng, activeArea.lat],
+      zoom: 10.0,
+      pitch: 18,
+      bearing: 0,
+      attributionControl: false,
+      renderWorldCopies: false,
+      preserveDrawingBuffer: true,
+    });
+
+    // Bidirectional camera synchronization
+    radarMap.on('move', () => {
+      if (opticalMapRef.current) {
+        syncCamera(radarMap, opticalMapRef.current);
+      }
+    });
+
+    opticalMap.on('move', () => {
+      if (radarMapRef.current) {
+        syncCamera(opticalMap, radarMapRef.current);
+      }
+    });
+
+    // Telemetry cursor tracking on both maps
+    const handleMouseMove = (e: maplibregl.MapMouseEvent) => {
+      onCursorMove?.({ lat: e.lngLat.lat, lng: e.lngLat.lng });
+    };
+    const handleMouseOut = () => {
+      onCursorMove?.(null);
+    };
+
+    radarMap.on('mousemove', handleMouseMove);
+    radarMap.on('mouseout', handleMouseOut);
+    opticalMap.on('mousemove', handleMouseMove);
+    opticalMap.on('mouseout', handleMouseOut);
+
+    radarMap.on('load', () => {
+      isLoadedRef.current = true;
+      renderRadarOverlays();
+    });
+    radarMap.on('style.load', () => {
+      renderRadarOverlays();
+    });
+
+    opticalMap.on('load', () => {
+      renderOpticalOverlays();
+    });
+    opticalMap.on('style.load', () => {
+      renderOpticalOverlays();
+    });
+
+    radarMapRef.current = radarMap;
+    opticalMapRef.current = opticalMap;
+
+    const resizeObserver = new ResizeObserver(() => {
+      radarMap.resize();
+      opticalMap.resize();
+    });
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
+
+    return () => {
+      resizeObserver.disconnect();
+      radarMap.remove();
+      opticalMap.remove();
+      radarMapRef.current = null;
+      opticalMapRef.current = null;
+      isLoadedRef.current = false;
+    };
+  }, []);
+
+  // React to basemap switch on bottom radar map
+  useEffect(() => {
+    const radarMap = radarMapRef.current;
+    if (!radarMap) return;
+    const styleSpec = BASEMAPS[basemap]?.style || ESRI_SATELLITE_STYLE;
+    radarMap.setStyle(styleSpec);
+  }, [basemap]);
+
+  // React to opacity updates
+  useEffect(() => {
+    const radarMap = radarMapRef.current;
+    if (!radarMap || !radarMap.isStyleLoaded()) return;
+    if (radarMap.getLayer('sar-overlay-layer')) {
+      radarMap.setPaintProperty('sar-overlay-layer', 'raster-opacity', opacity);
+    }
+  }, [opacity]);
+
+  // React to active study area or layer changes: re-render overlay & fly camera
+  useEffect(() => {
+    renderRadarOverlays();
+    renderOpticalOverlays();
+    fitAreaBounds(activeArea);
+
+    const radarMap = radarMapRef.current;
+    if (radarMap) {
+      radarMap.once('moveend', () => {
+        renderRadarOverlays();
+        renderOpticalOverlays();
+      });
+    }
+  }, [activeArea, activeLayer, fitAreaBounds, renderRadarOverlays, renderOpticalOverlays]);
+
+  // 12-Step Orbital Waltz Camera Choreography on timeline play
+  useEffect(() => {
+    if (!isTimelinePlaying || timelineIndex === undefined) return;
+    const radarMap = radarMapRef.current;
+    if (!radarMap || !radarMap.isStyleLoaded()) return;
+
+    const bbox = activeArea.bbox || [
+      activeArea.lng - 0.45,
+      activeArea.lat - 0.40,
+      activeArea.lng + 0.45,
+      activeArea.lat + 0.40,
+    ];
+    const [west, south, east, north] = bbox;
+    const centerLng = (west + east) / 2;
+    const centerLat = (south + north) / 2;
+    const spanLng = east - west;
+    const spanLat = north - south;
+
+    // Choreography requirement:
+    // Step 0: zoom 10.0, pitch 18, bearing 0
+    // Steps 2-7: smoothly zoom into primary change zones (zoom: 10.0 -> 11.4, pitch: 18 -> 42)
+    // Steps 8-11: zoom out to swath overview (zoom: 9.9, pitch: 10)
+    const CHOREOGRAPHY = [
+      { zoom: 10.0, pitch: 18, bearing: 0, dLngFactor: 0, dLatFactor: 0 },         // Step 0: Initial frame lock
+      { zoom: 10.2, pitch: 22, bearing: 2, dLngFactor: 0.02, dLatFactor: -0.01 },  // Step 1: Smooth start
+      { zoom: 10.5, pitch: 28, bearing: 5, dLngFactor: 0.04, dLatFactor: 0.03 },   // Step 2: Inward glide
+      { zoom: 10.8, pitch: 32, bearing: -3, dLngFactor: -0.03, dLatFactor: 0.04 }, // Step 3: Change quadrant focus
+      { zoom: 11.1, pitch: 37, bearing: -8, dLngFactor: -0.06, dLatFactor: -0.02 },// Step 4: Approaching primary anomaly
+      { zoom: 11.4, pitch: 42, bearing: -5, dLngFactor: -0.04, dLatFactor: -0.05 },// Step 5: Peak close-up on change zone
+      { zoom: 11.3, pitch: 40, bearing: 3, dLngFactor: 0.01, dLatFactor: 0.01 },   // Step 6: Sustained inspection
+      { zoom: 10.8, pitch: 34, bearing: 6, dLngFactor: 0.05, dLatFactor: 0.04 },   // Step 7: Transition boundary
+      { zoom: 10.4, pitch: 24, bearing: 4, dLngFactor: 0.02, dLatFactor: -0.02 },  // Step 8: Pulling back
+      { zoom: 10.1, pitch: 18, bearing: -2, dLngFactor: -0.02, dLatFactor: 0.01 }, // Step 9: Expanding field of view
+      { zoom: 10.0, pitch: 14, bearing: -1, dLngFactor: -0.01, dLatFactor: 0 },    // Step 10: Wide orbital framing
+      { zoom: 9.9, pitch: 10, bearing: 0, dLngFactor: 0, dLatFactor: 0 },          // Step 11: Swath overview
+    ];
+
+    const stepIdx = (timelineIndex >= 0 ? timelineIndex : 0) % 12;
+    const choreo = CHOREOGRAPHY[stepIdx];
+    const targetCenter: [number, number] = [
+      centerLng + choreo.dLngFactor * spanLng,
+      centerLat + choreo.dLatFactor * spanLat,
+    ];
+
+    radarMap.easeTo({
+      center: targetCenter,
+      zoom: choreo.zoom,
+      pitch: choreo.pitch,
+      bearing: choreo.bearing,
+      duration: 950,
+      essential: true,
+    });
+  }, [isTimelinePlaying, timelineIndex, activeArea]);
 
   // React to ancillary layer visibility toggles
   useEffect(() => {
-    const map = mapRef.current;
+    const map = radarMapRef.current;
     if (!map || !map.isStyleLoaded()) return;
 
     const agVis = ancillaryVisible.includes('agriculture') ? 'visible' : 'none';
@@ -668,234 +883,9 @@ export default function Globe({
     if (map.getLayer('ancillary-population-labels')) map.setLayoutProperty('ancillary-population-labels', 'visibility', popVis);
   }, [ancillaryVisible]);
 
-  // Export high-resolution annotated snapshot
-  const exportSnapshot = useCallback(() => {
-    const map = mapRef.current;
-    if (!map) return;
-
-    const mapCanvas = map.getCanvas();
-    const exportCanvas = document.createElement('canvas');
-    exportCanvas.width = mapCanvas.width;
-    exportCanvas.height = mapCanvas.height;
-    const ctx = exportCanvas.getContext('2d');
-    if (!ctx) return;
-
-    ctx.drawImage(mapCanvas, 0, 0);
-
-    const pad = 24;
-    ctx.fillStyle = 'rgba(17, 18, 16, 0.94)';
-    ctx.strokeStyle = '#242522';
-    ctx.lineWidth = 1;
-
-    const bannerW = 420;
-    const bannerH = 100;
-    const bannerX = pad;
-    const bannerY = pad;
-
-    ctx.fillRect(bannerX, bannerY, bannerW, bannerH);
-    ctx.strokeRect(bannerX, bannerY, bannerW, bannerH);
-
-    ctx.fillStyle = '#10B981';
-    ctx.font = 'bold 12px Inter, sans-serif';
-    ctx.fillText('EarthWaltz Observatory · NASA Space Apps 2026', bannerX + 14, bannerY + 24);
-
-    ctx.fillStyle = '#F3F2EE';
-    ctx.font = 'bold 14px Inter, sans-serif';
-    ctx.fillText(activeArea.name, bannerX + 14, bannerY + 46);
-
-    ctx.fillStyle = '#9A9B94';
-    ctx.font = '11px Inter, sans-serif';
-    ctx.fillText(
-      `${activeArea.phenomenon} · Layer: ${activeLayer?.label || 'SAR'} (${activeLayer?.unit || 'dB'}) [${selectedBand}]`,
-      bannerX + 14,
-      bannerY + 66
-    );
-
-    ctx.fillStyle = '#9A9B94';
-    ctx.font = '9px monospace';
-    ctx.fillText(
-      `Sensor: ${activeArea.provenance?.platform || 'NISAR L-Band'} | ID: ${activeArea.provenance?.granule_id || 'ALAV2A278633410'}`,
-      bannerX + 14,
-      bannerY + 86
-    );
-
-    const filename = `EarthWaltz_${activeArea.id}_${activeLayer?.label || 'SAR'}_${new Date().toISOString().slice(0, 10)}.png`;
-    const link = document.createElement('a');
-    link.download = filename;
-    link.href = exportCanvas.toDataURL('image/png');
-    link.click();
-
-    onSnapshotExported?.(filename);
-  }, [activeArea, activeLayer, selectedBand, onSnapshotExported]);
-
-  // Trigger snapshot export from props
+  // Study area pin markers on bottom radar map
   useEffect(() => {
-    if (captureTrigger > 0) {
-      exportSnapshot();
-    }
-  }, [captureTrigger, exportSnapshot]);
-
-  // Initialize MapLibre Map instance
-  useEffect(() => {
-    if (!containerRef.current) return;
-
-    const map = new maplibregl.Map({
-      container: containerRef.current,
-      style: BASEMAPS[basemap]?.style || ESRI_SATELLITE_STYLE,
-      center: [activeArea.lng, activeArea.lat],
-      zoom: 10.0,
-      pitch: 18,
-      bearing: 0,
-      attributionControl: false,
-      renderWorldCopies: false,
-      preserveDrawingBuffer: true,
-    });
-
-    map.addControl(new maplibregl.NavigationControl({ showCompass: true }), 'bottom-right');
-    map.addControl(
-      new maplibregl.AttributionControl({ compact: true, customAttribution: 'EarthWaltz · NASA EOSDIS · ISRO' }),
-      'bottom-right'
-    );
-
-    map.on('mousemove', (e) => {
-      onCursorMove?.({ lat: e.lngLat.lat, lng: e.lngLat.lng });
-    });
-
-    map.on('mouseout', () => {
-      onCursorMove?.(null);
-    });
-
-    // Continuously update dynamic split curtain longitude clipping on map pan/zoom at 60 FPS
-    map.on('move', () => {
-      if (mode === 'story' && baseImageRef.current) {
-        updateModulatedRaster(timelineIndex, selectedBand);
-      }
-    });
-
-    map.on('load', () => {
-      isLoadedRef.current = true;
-      renderSarOverlay();
-    });
-
-    map.on('style.load', () => {
-      renderSarOverlay();
-    });
-
-    mapRef.current = map;
-
-    // Observe container size changes (e.g. switching between Story Mode & Instrument Mode)
-    const resizeObserver = new ResizeObserver(() => {
-      map.resize();
-    });
-    if (containerRef.current) {
-      resizeObserver.observe(containerRef.current);
-    }
-
-    return () => {
-      resizeObserver.disconnect();
-      map.remove();
-      mapRef.current = null;
-      isLoadedRef.current = false;
-    };
-  }, []);
-
-  // React to basemap style switch
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map) return;
-    const styleSpec = BASEMAPS[basemap]?.style || ESRI_SATELLITE_STYLE;
-    map.setStyle(styleSpec);
-  }, [basemap]);
-
-  // React to opacity updates
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !map.isStyleLoaded()) return;
-    if (map.getLayer('sar-overlay-layer')) {
-      map.setPaintProperty('sar-overlay-layer', 'raster-opacity', opacity);
-    }
-  }, [opacity]);
-
-  // React to active study area or layer changes: re-render overlay & fly camera
-  useEffect(() => {
-    renderSarOverlay();
-    fitAreaBounds(activeArea);
-
-    const map = mapRef.current;
-    if (map) {
-      map.once('moveend', () => {
-        renderSarOverlay();
-      });
-    }
-  }, [activeArea, activeLayer, fitAreaBounds, renderSarOverlay]);
-
-  // 12-step Orbital Waltz Camera Choreography on timeline play
-  useEffect(() => {
-    if (!isTimelinePlaying || timelineIndex === undefined) return;
-    const map = mapRef.current;
-    if (!map || !map.isStyleLoaded()) return;
-
-    const bbox = activeArea.bbox || [
-      activeArea.lng - 0.45,
-      activeArea.lat - 0.40,
-      activeArea.lng + 0.45,
-      activeArea.lat + 0.40,
-    ];
-    const [west, south, east, north] = bbox;
-    const centerLng = (west + east) / 2;
-    const centerLat = (south + north) / 2;
-    const spanLng = east - west;
-    const spanLat = north - south;
-    const baseZoom = activeArea.zoom || 9.5;
-
-    const CHOREOGRAPHY = [
-      // Step 0 (1/12): Wide orbital frame (baseZoom - 0.2, pitch 0°, bearing 0°)
-      { zoomOffset: -0.2, pitch: 0, bearing: 0, dLngFactor: 0, dLatFactor: 0 },
-      // Step 1 (2/12): Zooming in (baseZoom + 0.4, pitch 20°, bearing 4°)
-      { zoomOffset: 0.4, pitch: 20, bearing: 4, dLngFactor: 0.03, dLatFactor: -0.02 },
-      // Step 2 (3/12): Closer inspection (baseZoom + 0.9, pitch 32°, bearing 8°)
-      { zoomOffset: 0.9, pitch: 32, bearing: 8, dLngFactor: 0.06, dLatFactor: 0.04 },
-      // Step 3 (4/12): Zoom out slightly to shift quadrant (baseZoom + 0.3, pitch 18°, bearing -5°)
-      { zoomOffset: 0.3, pitch: 18, bearing: -5, dLngFactor: -0.04, dLatFactor: 0.05 },
-      // Step 4 (5/12): Deep zoom into primary hotspot (baseZoom + 1.25, pitch 40°, bearing -12°)
-      { zoomOffset: 1.25, pitch: 40, bearing: -12, dLngFactor: -0.08, dLatFactor: -0.03 },
-      // Step 5 (6/12): Peak zoom on maximum surface change (baseZoom + 1.55, pitch 45°, bearing -6°)
-      { zoomOffset: 1.55, pitch: 45, bearing: -6, dLngFactor: -0.05, dLatFactor: -0.06 },
-      // Step 6 (7/12): Pull back to mid-altitude (baseZoom + 0.5, pitch 22°, bearing 5°)
-      { zoomOffset: 0.5, pitch: 22, bearing: 5, dLngFactor: 0, dLatFactor: 0 },
-      // Step 7 (8/12): Zoom into secondary hotspot (baseZoom + 1.3, pitch 38°, bearing 14°)
-      { zoomOffset: 1.3, pitch: 38, bearing: 14, dLngFactor: 0.07, dLatFactor: 0.06 },
-      // Step 8 (9/12): Pull back across basin (baseZoom + 0.4, pitch 15°, bearing 6°)
-      { zoomOffset: 0.4, pitch: 15, bearing: 6, dLngFactor: 0.02, dLatFactor: -0.04 },
-      // Step 9 (10/12): Final hotspot close-up (baseZoom + 1.1, pitch 30°, bearing -8°)
-      { zoomOffset: 1.1, pitch: 30, bearing: -8, dLngFactor: -0.05, dLatFactor: 0.03 },
-      // Step 10 (11/12): Zooming out (baseZoom + 0.3, pitch 12°, bearing -3°)
-      { zoomOffset: 0.3, pitch: 12, bearing: -3, dLngFactor: -0.02, dLatFactor: -0.01 },
-      // Step 11 (12/12): Return to full orbital swath overview (baseZoom - 0.1, pitch 0°, bearing 0°)
-      { zoomOffset: -0.1, pitch: 0, bearing: 0, dLngFactor: 0, dLatFactor: 0 },
-    ];
-
-    const stepIdx = (timelineIndex >= 0 ? timelineIndex : 0) % 12;
-    const choreo = CHOREOGRAPHY[stepIdx];
-    const targetZoom = Math.max(7.5, Math.min(13.5, baseZoom + choreo.zoomOffset));
-    const targetCenter: [number, number] = [
-      centerLng + choreo.dLngFactor * spanLng,
-      centerLat + choreo.dLatFactor * spanLat,
-    ];
-
-    map.easeTo({
-      center: targetCenter,
-      zoom: targetZoom,
-      pitch: choreo.pitch,
-      bearing: choreo.bearing,
-      duration: 950,
-      essential: true,
-    });
-  }, [isTimelinePlaying, timelineIndex, activeArea]);
-
-  // Update study area map pin markers
-  useEffect(() => {
-    const map = mapRef.current;
+    const map = radarMapRef.current;
     if (!map) return;
 
     markersRef.current.forEach((m) => m.remove());
@@ -910,8 +900,8 @@ export default function Globe({
         <div class="relative flex items-center justify-center">
           <div class="w-3.5 h-3.5 rounded-full ${
             isSelected
-              ? 'bg-[#10B981] ring-4 ring-[#10B981]/30'
-              : 'bg-[#181916] border border-[#242522] group-hover:border-[#10B981]'
+              ? 'bg-[#0047AB] ring-4 ring-[#0047AB]/30'
+              : 'bg-[#121417] border border-[#D0CEC4] group-hover:border-[#0047AB]'
           } transition-all"></div>
         </div>
       `;
@@ -929,5 +919,25 @@ export default function Globe({
     });
   }, [areas, activeArea.id, onAreaClick]);
 
-  return <div ref={containerRef} className="w-full h-full relative" />;
+  return (
+    <div ref={containerRef} className="relative w-full h-full overflow-hidden select-none">
+      {/* Bottom Map: Hardware-Accelerated Radar MapLibre Instance (100% width/height) */}
+      <div ref={radarContainerRef} className="absolute inset-0 w-full h-full" />
+
+      {/* Top Map: Hardware-Accelerated Optical MapLibre Instance Stacked with CSS clipPath */}
+      <div
+        ref={opticalContainerRef}
+        className="absolute inset-0 w-full h-full"
+        style={{
+          position: 'absolute',
+          inset: 0,
+          clipPath:
+            mode === 'story'
+              ? `inset(0 ${100 - curtainPosition}% 0 0)`
+              : 'inset(0 100% 0 0)',
+          pointerEvents: mode === 'story' ? 'auto' : 'none',
+        }}
+      />
+    </div>
+  );
 }

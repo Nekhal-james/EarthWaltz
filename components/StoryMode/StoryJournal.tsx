@@ -9,8 +9,8 @@ interface StoryJournalProps {
   onSelectArea: (area: StudyArea) => void;
   activeLayerKey: string;
   onSelectLayer: (layerKey: string) => void;
-  onFocusCurtain: () => void;
-  onSwitchToInstrument: () => void;
+  onFocusCurtain?: () => void;
+  onSwitchToInstrument?: () => void;
   isPlayingSonification: boolean;
   onToggleSonification: () => void;
   isPlayingTimeline?: boolean;
@@ -23,88 +23,60 @@ interface StoryJournalProps {
 
 interface ChapterSummary {
   id: string;
-  pillLabel: string;
   title: string;
   location: string;
   sensor: string;
   story: string;
-  hhKey: string;
-  hvKey: string;
-  insarKey: string;
 }
 
 const CHAPTER_SUMMARIES: Record<string, ChapterSummary> = {
   kerala: {
     id: 'kerala',
-    pillLabel: 'Kerala',
-    title: 'Monsoon Flood Inundation & Below-Sea-Level Polders',
-    location: 'Kuttanad & Vembanad Lake, India',
-    sensor: 'NISAR L-Band 24 cm · Dual Polarimetric',
+    title: 'Monsoon flood inundation and below-sea-level polders',
+    location: 'Kuttanad and Vembanad Lake, India',
+    sensor: 'NISAR L-band 24 cm, dual polarimetric',
     story:
       'Torrential monsoon clouds completely block optical cameras over Kerala for months on end. NISAR’s 24 cm L-band radar penetrates directly through storm clouds to map rising floodwaters across Kuttanad’s below-sea-level paddy polders. Where standing water meets upright crops, microwave pulses double-bounce into bright amber reflections, pinpointing flooded communities in real time.',
-    hhKey: 'hh',
-    hvKey: 'hv',
-    insarKey: 'insar_phase',
   },
   amazon: {
     id: 'amazon',
-    pillLabel: 'Amazon Basin',
-    title: 'Hidden Flood Pulses & Deforestation Frontiers',
-    location: 'Manaus, Rio Negro & Solimões, Brazil',
-    sensor: 'ALOS PALSAR & CONAE SAOCOM-1A · L-Band',
+    title: 'Hidden flood pulses and deforestation frontiers',
+    location: 'Manaus, Rio Negro and Solimões, Brazil',
+    sensor: 'ALOS PALSAR and CONAE SAOCOM-1A, L-band',
     story:
       'Seasonal flood pulses surge meters of river water across thousands of square kilometers of dense tropical forest. Optical satellites see only an unbroken green canopy that completely conceals the flooded ground below. L-band microwaves pierce the canopy to illuminate submerged tree trunks, revealing critical aquatic habitats while cross-polarization tracks deforestation.',
-    hhKey: 'hh',
-    hvKey: 'hv',
-    insarKey: 'insar_phase',
   },
   himalayas: {
     id: 'himalayas',
-    pillLabel: 'Himalayas',
-    title: 'Glacial Velocity & High-Mountain Hazards',
-    location: 'Khumbu Glacier & Everest Massif, Nepal',
-    sensor: 'NISAR L2 GOFF & ALOS PALSAR · L-Band 24 cm',
+    title: 'Glacial velocity and high-mountain hazards',
+    location: 'Khumbu Glacier and Everest Massif, Nepal',
+    sensor: 'NISAR L2 GOFF and ALOS PALSAR, L-band 24 cm',
     story:
       'Persistent blizzards and extreme optical shadows make tracking Himalayan glaciers nearly impossible with ordinary cameras. Radar offset tracking measures the slow downhill crawl of Khumbu Glacier ice with millimeter precision. Phase stability changes alert scientists to melting firn and unstable moraine dams that threaten catastrophic downstream floods.',
-    hhKey: 'hh',
-    hvKey: 'hv',
-    insarKey: 'coherence',
   },
   turkey: {
     id: 'turkey',
-    pillLabel: 'Turkey / Anatolia',
-    title: 'Coseismic Surface Rupture & Fault Slip',
+    title: 'Coseismic surface rupture and fault slip',
     location: 'East Anatolian Fault, Kahramanmaraş, Turkey',
-    sensor: 'Sentinel-1 C-Band & NISAR L2 GUNW InSAR',
+    sensor: 'Sentinel-1 C-band and NISAR L2 GUNW InSAR',
     story:
       'In February 2023, catastrophic earthquakes ruptured the East Anatolian Fault across southern Turkey. Satellite radar interferometry (InSAR) captured repeat passes before and after the quake, generating colorful fringe cycles where each rainbow band represents centimeters of ground shift. This pinpointed the exact surface fault rupture and seismic strain.',
-    hhKey: 'hh',
-    hvKey: 'hv',
-    insarKey: 'insar_phase',
   },
   punjab: {
     id: 'punjab',
-    pillLabel: 'Punjab',
-    title: 'Soil Moisture Dynamics & Crop Growth Cycles',
+    title: 'Soil moisture dynamics and crop growth cycles',
     location: 'Indo-Gangetic Plain, Punjab, India',
-    sensor: 'NISAR Dual-Frequency L+S Band (24 cm & 9.3 cm)',
+    sensor: 'NISAR dual-frequency L and S band (24 cm and 9.3 cm)',
     story:
-      'Punjab’s agricultural heartland feeds millions through intensive wheat-rice rotations, often obscured by seasonal dust and smog. Liquid water has a dielectric constant 20× higher than dry soil, causing radar backscatter to surge when fields are irrigated. Dual L+S band microwaves simultaneously track soil moisture and crop emergence from sowing to harvest.',
-    hhKey: 'hh',
-    hvKey: 'hv',
-    insarKey: 'insar_phase',
+      'Punjab’s agricultural heartland feeds millions through intensive wheat-rice rotations, often obscured by seasonal dust and smog. Liquid water has a dielectric constant 20× higher than dry soil, causing radar backscatter to surge when fields are irrigated. Dual L and S band microwaves simultaneously track soil moisture and crop emergence from sowing to harvest.',
   },
   indonesia: {
     id: 'indonesia',
-    pillLabel: 'Sumatra',
-    title: 'Peatland Moisture Depletion & Fire Early Warning',
-    location: 'Tropical Peat Forests, Sumatra, Indonesia',
-    sensor: 'NISAR L-Band 24 cm & RADARSAT C-Band',
+    title: 'Peatland moisture depletion and fire early warning',
+    location: 'Tropical peat forests, Sumatra, Indonesia',
+    sensor: 'NISAR L-band 24 cm and RADARSAT C-band',
     story:
       'Southeast Asian tropical peatlands store centuries of subterranean carbon that becomes an explosive fire hazard when drained. Long L-band radar waves penetrate through smoke and surface vegetation deep into the underground peat bed. When subterranean moisture drops below critical thresholds, radar signals warn forestry teams weeks before fires ignite.',
-    hhKey: 'hh',
-    hvKey: 'hv',
-    insarKey: 'insar_phase',
   },
 };
 
@@ -114,8 +86,6 @@ export default function StoryJournal({
   onSelectArea,
   activeLayerKey,
   onSelectLayer,
-  onFocusCurtain,
-  onSwitchToInstrument,
   isPlayingSonification,
   onToggleSonification,
   isPlayingTimeline = false,
@@ -127,302 +97,186 @@ export default function StoryJournal({
 }: StoryJournalProps) {
   const current = CHAPTER_SUMMARIES[activeArea.id] || CHAPTER_SUMMARIES.kerala;
 
-  // Resolve active channel mode: 'hh', 'hv', or 'insar'
-  const isHH = activeLayerKey.includes('hh') || activeLayerKey === 'default';
-  const isHV = activeLayerKey.includes('hv');
-  const isInSAR = !isHH && !isHV;
+  // Determine active channel type: hh, hv, insar, or coherence
+  const isCoherence = activeLayerKey.includes('coherence');
+  const isInSAR = !isCoherence && (activeLayerKey.includes('phase') || activeLayerKey.includes('insar') || activeLayerKey.includes('goff'));
+  const isHV = !isCoherence && !isInSAR && activeLayerKey.includes('hv');
+  const isHH = !isCoherence && !isInSAR && !isHV;
 
-  const handleSelectChannel = (channelType: 'hh' | 'hv' | 'insar') => {
-    if (channelType === 'hh') {
-      const target = Object.keys(activeArea.layers).find((k) => k.includes('hh')) || 'hh';
-      onSelectLayer(target);
-    } else if (channelType === 'hv') {
-      const target = Object.keys(activeArea.layers).find((k) => k.includes('hv')) || 'hv';
-      onSelectLayer(target);
+  const handleChannelSelect = (channel: 'hh' | 'hv' | 'insar' | 'coherence') => {
+    const keys = Object.keys(activeArea.layers);
+    if (channel === 'hh') {
+      const match = keys.find((k) => k.includes('hh')) || 'hh';
+      onSelectLayer(match);
+    } else if (channel === 'hv') {
+      const match = keys.find((k) => k.includes('hv')) || 'hv';
+      onSelectLayer(match);
+    } else if (channel === 'insar') {
+      const match = keys.find((k) => k.includes('phase') || k.includes('insar') || k.includes('goff')) || 'insar';
+      onSelectLayer(match);
     } else {
-      const target =
-        Object.keys(activeArea.layers).find((k) => k.includes('phase') || k.includes('coherence') || k.includes('goff')) ||
-        current.insarKey;
-      onSelectLayer(target);
+      const match = keys.find((k) => k.includes('coherence')) || 'coherence';
+      onSelectLayer(match);
     }
   };
 
+  const channelRows = [
+    {
+      id: 'hh' as const,
+      label: 'HH flood and water',
+      isSelected: isHH,
+      gradient: 'linear-gradient(to right, #0284C7, #38BDF8, #F59E0B, #FEF08A)',
+      scaleHint: 'Specular water to double-bounce urban',
+    },
+    {
+      id: 'hv' as const,
+      label: 'HV forest canopy',
+      isSelected: isHV,
+      gradient: 'linear-gradient(to right, #E11D48, #F97316, #10B981)',
+      scaleHint: 'Deforestation scar to dense canopy',
+    },
+    {
+      id: 'insar' as const,
+      label: 'InSAR ground shift',
+      isSelected: isInSAR,
+      gradient: 'linear-gradient(to right, #EF4444, #F59E0B, #10B981, #06B6D4, #3B82F6, #A855F7)',
+      scaleHint: 'Phase fringe deformation cycles',
+    },
+    {
+      id: 'coherence' as const,
+      label: 'Phase coherence',
+      isSelected: isCoherence,
+      gradient: 'linear-gradient(to right, #6D28D9, #06B6D4, #FFFFFF)',
+      scaleHint: 'Decorrelated ground to stable urban structure',
+    },
+  ];
+
+  const wavelengthBands = [
+    { id: 'L-Band', label: '24 cm L-band' },
+    { id: 'S-Band', label: '9.3 cm S-band' },
+    { id: 'C-Band', label: '5.6 cm C-band' },
+  ];
+
+  const contextLayers = [
+    { id: 'population', label: 'Settlements' },
+    { id: 'agriculture', label: 'Agriculture' },
+    { id: 'infrastructure', label: 'Roads & bunds' },
+  ];
+
   return (
-    <aside className="w-[420px] h-full flex flex-col bg-[#FFFFFF] border-r border-[#E2E8F0] select-text z-20 overflow-y-auto font-sans shadow-sm">
-      {/* 1. TOP HEADER & REGION PICKER (Clean 2x3 Grid) */}
-      <div className="p-5 border-b border-[#E2E8F0] shrink-0 bg-[#FFFFFF]">
-        <div className="flex items-center gap-2 mb-2">
-          <span className="w-2 h-2 rounded-full bg-[#2563EB]" />
-          <span className="text-[11px] font-semibold tracking-wider text-[#64748B] uppercase">
-            NASA · ISRO Observatory
-          </span>
-        </div>
-
-        <h1 className="text-xl font-bold tracking-tight text-[#0F172A] mb-3">
-          Dancing with the SARs
+    <aside className="w-[400px] h-full flex flex-col bg-[#F6F5F0] border-r border-[#D0CEC4] select-text z-20 overflow-y-auto font-sans">
+      {/* SECTION 1: REGION NARRATIVE */}
+      <section className="p-4 border-b border-[#D0CEC4] flex flex-col gap-2">
+        <h1 className="font-display text-[22px] font-bold text-[#121417] leading-tight">
+          {current.title}
         </h1>
+        <div className="text-xs text-[#121417]/70 font-normal">
+          {current.location}, {current.sensor}
+        </div>
+        <p className="text-xs text-[#121417]/85 leading-relaxed font-sans mt-1">
+          {current.story}
+        </p>
+      </section>
 
-        {/* 2x3 Grid of Region Pill Buttons */}
-        <div className="grid grid-cols-3 gap-1.5">
-          {areas.map((area) => {
-            const isActive = area.id === activeArea.id;
-            const item = CHAPTER_SUMMARIES[area.id] || { pillLabel: area.name.split(',')[0] };
-            return (
+      {/* SECTION 2: RADAR CHANNEL & BAND */}
+      <section className="p-4 border-b border-[#D0CEC4] flex flex-col gap-3.5">
+        <div>
+          <div className="text-xs font-medium text-[#121417]/70 mb-2">Radar channel</div>
+          <div className="flex flex-col gap-1.5">
+            {channelRows.map((row) => (
               <button
-                key={area.id}
-                onClick={() => onSelectArea(area)}
-                className={`py-1.5 px-2 text-xs font-medium rounded-lg transition-all text-center truncate ${
-                  isActive
-                    ? 'bg-[#2563EB] text-white shadow-sm font-semibold'
-                    : 'bg-[#F8FAFC] text-[#475569] border border-[#E2E8F0] hover:bg-[#F1F5F9] hover:text-[#0F172A]'
+                key={row.id}
+                onClick={() => handleChannelSelect(row.id)}
+                className={`w-full flex items-center justify-between p-2 text-left border transition-colors ${
+                  row.isSelected
+                    ? 'bg-[#EAE8E0] border-[#0047AB]'
+                    : 'bg-[#F6F5F0] border-[#D0CEC4] hover:bg-[#EAE8E0]/60'
                 }`}
               >
-                {item.pillLabel}
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div
+                    className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center shrink-0 ${
+                      row.isSelected ? 'border-[#0047AB]' : 'border-[#D0CEC4] bg-white'
+                    }`}
+                  >
+                    {row.isSelected && <div className="w-2 h-2 rounded-full bg-[#0047AB]" />}
+                  </div>
+                  <span className="text-xs font-medium text-[#121417] truncate">
+                    {row.label}
+                  </span>
+                </div>
+                <div
+                  className="h-2 w-20 border border-[#D0CEC4] shrink-0 ml-3"
+                  style={{ background: row.gradient }}
+                  title={row.scaleHint}
+                />
               </button>
-            );
-          })}
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* 2. MIDDLE CONTENT: ACTIVE REGION STORY & RADAR CONTROLS */}
-      <div className="p-5 flex-1 flex flex-col gap-4 bg-[#FFFFFF]">
-        {/* Title & Metadata */}
         <div>
-          <div className="text-[11px] font-medium text-[#64748B] mb-1">
-            {current.location} · <span className="text-[#2563EB] font-semibold">{current.sensor}</span>
-          </div>
-          <h2 className="text-base font-bold text-[#0F172A] leading-snug">
-            {current.title}
-          </h2>
-        </div>
-
-        {/* Concise 3-Sentence Plain-English Story Card */}
-        <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-4 text-xs leading-relaxed text-[#334155]">
-          <p>{current.story}</p>
-        </div>
-
-        {/* 3-Button Radar Channel Switcher */}
-        <div>
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-xs font-semibold text-[#0F172A]">Radar Channel View</span>
-            <button
-              onClick={onFocusCurtain}
-              className="text-[11px] font-medium text-[#2563EB] hover:underline"
-            >
-              Reset curtain (35%)
-            </button>
-          </div>
-
+          <div className="text-xs font-medium text-[#121417]/70 mb-1.5">Radar wavelength</div>
           <div className="grid grid-cols-3 gap-1.5">
-            <button
-              onClick={() => handleSelectChannel('hh')}
-              className={`py-2 px-2 text-xs rounded-lg transition-all text-center flex flex-col items-center justify-center gap-0.5 border ${
-                isHH
-                  ? 'bg-[#2563EB] text-white border-[#2563EB] shadow-sm font-semibold'
-                  : 'bg-[#FFFFFF] text-[#475569] border-[#E2E8F0] hover:bg-[#F8FAFC] hover:text-[#0F172A]'
-              }`}
-            >
-              <span>HH Channel</span>
-              <span className={`text-[10px] ${isHH ? 'text-white/80' : 'text-[#64748B]'}`}>
-                Water & Flood
-              </span>
-            </button>
-
-            <button
-              onClick={() => handleSelectChannel('hv')}
-              className={`py-2 px-2 text-xs rounded-lg transition-all text-center flex flex-col items-center justify-center gap-0.5 border ${
-                isHV
-                  ? 'bg-[#2563EB] text-white border-[#2563EB] shadow-sm font-semibold'
-                  : 'bg-[#FFFFFF] text-[#475569] border-[#E2E8F0] hover:bg-[#F8FAFC] hover:text-[#0F172A]'
-              }`}
-            >
-              <span>HV Channel</span>
-              <span className={`text-[10px] ${isHV ? 'text-white/80' : 'text-[#64748B]'}`}>
-                Forest Canopy
-              </span>
-            </button>
-
-            <button
-              onClick={() => handleSelectChannel('insar')}
-              className={`py-2 px-2 text-xs rounded-lg transition-all text-center flex flex-col items-center justify-center gap-0.5 border ${
-                isInSAR
-                  ? 'bg-[#2563EB] text-white border-[#2563EB] shadow-sm font-semibold'
-                  : 'bg-[#FFFFFF] text-[#475569] border-[#E2E8F0] hover:bg-[#F8FAFC] hover:text-[#0F172A]'
-              }`}
-            >
-              <span>InSAR / Coherence</span>
-              <span className={`text-[10px] ${isInSAR ? 'text-white/80' : 'text-[#64748B]'}`}>
-                Ground Shift
-              </span>
-            </button>
-          </div>
-        </div>
-
-        {/* Inline Color Scale Legend inside Panel */}
-        <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-3 flex flex-col gap-2">
-          <div className="flex items-center justify-between text-[11px] font-semibold text-[#0F172A]">
-            <span>
-              {isHH
-                ? 'HH Backscatter Calibrated Scale'
-                : isHV
-                ? 'HV Biomass Canopy Scale'
-                : 'InSAR Interferometric Phase Scale'}
-            </span>
-            <span className="font-mono text-[10px] text-[#64748B]">
-              {isHH ? 'dB (σ°)' : isHV ? 'dB (γ°)' : 'rad / fringe'}
-            </span>
-          </div>
-
-          {/* Color Gradient Ramp */}
-          {isHH && (
-            <div
-              className="h-2.5 w-full rounded-full border border-black/10"
-              style={{
-                background: 'linear-gradient(to right, #0284C7 0%, #38BDF8 30%, #1E293B 55%, #F59E0B 80%, #FEF08A 100%)',
-              }}
-            />
-          )}
-
-          {isHV && (
-            <div
-              className="h-2.5 w-full rounded-full border border-black/10"
-              style={{
-                background: 'linear-gradient(to right, #F43F5E 0%, #FB923C 35%, #347357 65%, #10B981 100%)',
-              }}
-            />
-          )}
-
-          {isInSAR && (
-            <div
-              className="h-2.5 w-full rounded-full border border-black/10"
-              style={{
-                background:
-                  'linear-gradient(to right, #EF4444 0%, #F59E0B 20%, #10B981 40%, #06B6D4 60%, #3B82F6 80%, #A855F7 100%)',
-              }}
-            />
-          )}
-
-          {/* Scale Labels */}
-          <div className="flex items-center justify-between text-[10px] text-[#64748B]">
-            {isHH ? (
-              <>
-                <span>-24 dB · Water</span>
-                <span>-12 dB · Dry Land (Clear)</span>
-                <span>+2 dB · Flooded Polders</span>
-              </>
-            ) : isHV ? (
-              <>
-                <span>-24 dB · Cleared / Scar</span>
-                <span>-16 dB · Moderate Veg</span>
-                <span>-9 dB · Dense Canopy</span>
-              </>
-            ) : (
-              <>
-                <span>-π (-12 cm)</span>
-                <span>0 cm (Stable)</span>
-                <span>+π (+12 cm)</span>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* 4. RADAR FREQUENCY BAND SELECTOR (Integrated into main panel) */}
-        <div className="bg-[#FFFFFF] border border-[#E2E8F0] rounded-xl p-3 flex flex-col gap-2">
-          <div className="flex items-center justify-between text-xs font-semibold text-[#0F172A]">
-            <span>Radar Frequency Band</span>
-            <span className="text-[10px] text-[#2563EB] font-medium">
-              {selectedBand === 'L-Band'
-                ? '24 cm · Penetrates Soil & Full Canopy'
-                : selectedBand === 'S-Band'
-                ? '9.3 cm · Crop Structure Sensitive'
-                : '5.6 cm · Surface Roughness'}
-            </span>
-          </div>
-          <div className="grid grid-cols-3 gap-1.5">
-            {[
-              { id: 'L-Band', label: 'L-Band (24 cm)', desc: 'NISAR Primary' },
-              { id: 'S-Band', label: 'S-Band (9.3 cm)', desc: 'ISRO Payload' },
-              { id: 'C-Band', label: 'C-Band (5.6 cm)', desc: 'Sentinel / RADARSAT' },
-            ].map((b) => {
+            {wavelengthBands.map((b) => {
               const isSelected = selectedBand === b.id;
               return (
                 <button
                   key={b.id}
                   onClick={() => onSelectBand?.(b.id)}
-                  className={`py-1.5 px-2 text-xs rounded-lg transition-all text-center border ${
+                  className={`py-1.5 px-2 text-xs font-medium text-center border transition-colors ${
                     isSelected
-                      ? 'bg-[#2563EB] text-white border-[#2563EB] font-semibold shadow-sm'
-                      : 'bg-[#F8FAFC] text-[#475569] border-[#E2E8F0] hover:bg-[#F1F5F9] hover:text-[#0F172A]'
+                      ? 'bg-[#0047AB] text-white border-[#0047AB] font-semibold'
+                      : 'bg-[#EAE8E0] text-[#121417] border-[#D0CEC4] hover:bg-[#D0CEC4]/50'
                   }`}
                 >
-                  <div className="text-[11px] font-semibold leading-tight">{b.id}</div>
-                  <div className={`text-[9px] ${isSelected ? 'text-white/80' : 'text-[#64748B]'}`}>{b.desc}</div>
+                  {b.label}
                 </button>
               );
             })}
           </div>
         </div>
+      </section>
 
-        {/* 5. CONTEXT OVERLAYS TOGGLES (Integrated into main panel) */}
-        <div className="bg-[#FFFFFF] border border-[#E2E8F0] rounded-xl p-3 flex flex-col gap-2">
-          <div className="flex items-center justify-between text-xs font-semibold text-[#0F172A]">
-            <span>Context Overlays</span>
-            <span className="text-[10px] text-[#64748B]">Ancillary Reference Layers</span>
-          </div>
+      {/* SECTION 3: CONTEXT LAYERS & PLAYBACK */}
+      <section className="p-4 flex-1 flex flex-col justify-between gap-4">
+        <div>
+          <div className="text-xs font-medium text-[#121417]/70 mb-1.5">Context layers</div>
           <div className="grid grid-cols-3 gap-1.5">
-            {[
-              { id: 'population', label: 'Settlements', icon: '🏙️' },
-              { id: 'agriculture', label: 'Agriculture', icon: '🌾' },
-              { id: 'infrastructure', label: 'Corridors', icon: '🛣️' },
-            ].map((o) => {
-              const isVisible = ancillaryVisible?.includes(o.id);
+            {contextLayers.map((layer) => {
+              const isVisible = ancillaryVisible?.includes(layer.id);
               return (
                 <button
-                  key={o.id}
-                  onClick={() => onToggleAncillary?.(o.id)}
-                  className={`py-1.5 px-2 text-xs rounded-lg transition-all text-center flex items-center justify-center gap-1 border ${
+                  key={layer.id}
+                  onClick={() => onToggleAncillary?.(layer.id)}
+                  className={`py-1.5 px-2 text-xs font-medium text-center border transition-colors ${
                     isVisible
-                      ? 'bg-[#10B981] text-white border-[#10B981] font-semibold shadow-sm'
-                      : 'bg-[#F8FAFC] text-[#475569] border-[#E2E8F0] hover:bg-[#F1F5F9] hover:text-[#0F172A]'
+                      ? 'bg-[#0047AB] text-white border-[#0047AB] font-semibold'
+                      : 'bg-[#EAE8E0] text-[#121417] border-[#D0CEC4] hover:bg-[#D0CEC4]/50'
                   }`}
                 >
-                  <span className="text-[10px]">{o.icon}</span>
-                  <span className="text-[11px] font-medium">{o.label}</span>
+                  {layer.label}
                 </button>
               );
             })}
           </div>
         </div>
-      </div>
 
-      {/* 3. BOTTOM SECTION: 2-BUTTON ACTION ROW */}
-      <div className="p-5 border-t border-[#E2E8F0] shrink-0 bg-[#FFFFFF] flex flex-col gap-3">
-        <div className="grid grid-cols-2 gap-2">
-          {/* Action 1: Time-Series Waltz Animation */}
+        <div className="pt-2 flex flex-col gap-2">
           <button
             onClick={onToggleTimeline}
-            className={`py-2.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-sm ${
-              isPlayingTimeline
-                ? 'bg-[#D97706] text-white hover:bg-[#B45309]'
-                : 'bg-[#2563EB] text-white hover:bg-[#1D4ED8]'
-            }`}
+            className="w-full py-2.5 px-3 text-xs font-semibold bg-[#0047AB] text-white hover:bg-[#003882] transition-colors"
           >
-            <span>{isPlayingTimeline ? '⏸ Pause Waltz' : '▶ Play Time-Series Waltz'}</span>
+            {isPlayingTimeline ? 'Pause 12-month cycle' : 'Play 12-month cycle'}
           </button>
-
-          {/* Action 2: Audio Sonification */}
           <button
             onClick={onToggleSonification}
-            className={`py-2.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-sm ${
-              isPlayingSonification
-                ? 'bg-[#EF4444] text-white hover:bg-[#DC2626]'
-                : 'bg-[#0F172A] text-white hover:bg-[#1E293B]'
-            }`}
+            className="w-full py-2.5 px-3 text-xs font-medium bg-[#EAE8E0] text-[#121417] border border-[#D0CEC4] hover:bg-[#D0CEC4]/60 transition-colors"
           >
-            <span>{isPlayingSonification ? '⏹ Stop Audio' : '🔊 Audio Sonification'}</span>
+            {isPlayingSonification ? 'Stop radar rhythm' : 'Listen to radar rhythm'}
           </button>
         </div>
-      </div>
+      </section>
     </aside>
   );
 }

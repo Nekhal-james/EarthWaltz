@@ -9,32 +9,77 @@ interface StoryStatusStripProps {
   area: StudyArea;
   cursorCoords: { lat: number; lng: number } | null;
   timeseriesPath?: string | null;
-  timelineIndex: number;
-  onTimelineChange: (index: number, dateStr: string) => void;
+  timelineIndex?: number;
+  timelineStep?: number;
+  onTimelineChange?: (index: number, dateStr: string) => void;
+  onTimelineStepChange?: (step: number) => void;
   isPlaying?: boolean;
   onPlayingChange?: (playing: boolean) => void;
 }
+
+const MONTH_NAMES = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
 
 export default function StoryStatusStrip({
   activeLayer,
   area,
   cursorCoords,
   timeseriesPath,
-  timelineIndex,
+  timelineIndex = 0,
+  timelineStep,
   onTimelineChange,
-  isPlaying,
+  onTimelineStepChange,
+  isPlaying = false,
   onPlayingChange,
 }: StoryStatusStripProps) {
+  const currentStep = timelineStep !== undefined ? timelineStep : timelineIndex;
   const { data: tsData } = useTimeSeries(timeseriesPath || null);
   const [telemetry, setTelemetry] = useState<TelemetryData | null>(null);
-  const [internalPlaying, setInternalPlaying] = useState(false);
-  const playing = isPlaying !== undefined ? isPlaying : internalPlaying;
+
+  const dates = useMemo(() => {
+    if (tsData?.dates && tsData.dates.length > 0) {
+      return tsData.dates;
+    }
+    return [
+      '2025-01-15',
+      '2025-02-15',
+      '2025-03-15',
+      '2025-04-15',
+      '2025-05-15',
+      '2025-06-15',
+      '2025-07-15',
+      '2025-08-15',
+      '2025-09-15',
+      '2025-10-15',
+      '2025-11-15',
+      '2025-12-15',
+    ];
+  }, [tsData]);
 
   const togglePlay = useCallback(() => {
-    const next = !playing;
-    setInternalPlaying(next);
-    onPlayingChange?.(next);
-  }, [playing, onPlayingChange]);
+    onPlayingChange?.(!isPlaying);
+  }, [isPlaying, onPlayingChange]);
+
+  const setStep = useCallback(
+    (nextIdx: number) => {
+      const bounded = (nextIdx + dates.length) % dates.length;
+      onTimelineStepChange?.(bounded);
+      onTimelineChange?.(bounded, dates[bounded] || '');
+    },
+    [dates, onTimelineChange, onTimelineStepChange]
+  );
 
   // Load telemetry grid for coordinate value lookup
   useEffect(() => {
@@ -53,7 +98,7 @@ export default function StoryStatusStrip({
     };
   }, [activeLayer]);
 
-  // Compute live value at cursor or default to center/mean
+  // Compute live calibrated value at cursor or default to center/mean
   const currentVal = useMemo(() => {
     const unit = activeLayer?.unit || 'dB';
     if (!telemetry || !telemetry.data || telemetry.data.length === 0) {
@@ -64,9 +109,9 @@ export default function StoryStatusStrip({
 
     const bbox = telemetry.bbox || area.bbox || [
       area.lng - 0.45,
-      area.lat - 0.40,
+      area.lat - 0.4,
       area.lng + 0.45,
-      area.lat + 0.40,
+      area.lat + 0.4,
     ];
     const [west, south, east, north] = bbox;
 
@@ -90,16 +135,16 @@ export default function StoryStatusStrip({
     let modulated = sampled;
     if (tsData && tsData.series) {
       const meanSeries = tsData.series.hh_mean || tsData.series.hv_mean;
-      if (meanSeries && meanSeries[timelineIndex] !== undefined) {
-        const offset = meanSeries[timelineIndex] - meanSeries[0];
+      if (meanSeries && meanSeries[currentStep] !== undefined) {
+        const offset = meanSeries[currentStep] - meanSeries[0];
         modulated += offset;
       }
     }
 
     return { val: modulated, unit: telemetry.unit };
-  }, [telemetry, area, cursorCoords, activeLayer, tsData, timelineIndex]);
+  }, [telemetry, area, cursorCoords, activeLayer, tsData, currentStep]);
 
-  // Plain-English physical mechanism description
+  // Plain-English physical scattering mechanism description
   const mechanismText = useMemo(() => {
     const val = currentVal.val;
     const unit = activeLayer?.unit || 'dB';
@@ -108,121 +153,143 @@ export default function StoryStatusStrip({
       (activeLayer?.label || '').toLowerCase().includes('hv');
 
     if (unit === 'rad') {
-      return 'Interferometric fringe cycle (Centimetric line-of-sight surface displacement)';
+      return 'Interferometric surface displacement fringe cycle';
     }
     if (unit === 'coherence') {
-      if (val >= 0.75) return 'High phase stability (Bedrock / stable urban structures)';
-      if (val >= 0.40) return 'Moderate phase stability (Agricultural crops / dry soil)';
-      return 'Decorrelated surface (Open water specular surface / dense wind-blown canopy)';
+      if (val >= 0.72) return 'High phase stability on bedrock and urban structures';
+      if (val >= 0.35) return 'Moderate coherence on agricultural fields and bare soil';
+      return 'Decorrelated surface';
     }
 
-    // Backscatter dB
+    // HV Channel (Cross-polarized)
     if (isHV) {
-      if (val < -22.5) return 'Specular mirror reflection (Smooth open water)';
-      if (val >= -14.5) return 'Dense canopy volume scattering (Multi-tier tree crown reflection)';
-      return 'Low-biomass / agricultural surface scatter (Soil roughness & crop canopy)';
+      if (val < -18.0) return 'Canopy clear-cut, burn scar, or smooth surface';
+      if (val >= -12.0) return 'Cross-polarized volumetric canopy scatter';
+      return 'Diffuse volumetric canopy scatter';
     }
 
-    // HH
-    if (val > -8.0) return 'Double-bounce corner reflection (Flooded vegetation / urban structures)';
-    if (val > -14.0) return 'Diffuse surface backscatter (Midland plains & agricultural fields)';
-    if (val < -18.0) return 'Specular mirror reflection (Smooth open water)';
-    return 'Moderate surface return';
+    // HH Channel (Co-polarized)
+    if (val < -17.5) return 'Specular surface scatter off open water';
+    if (val > -7.0) return 'Corner-reflector double bounce in flooded vegetation';
+    return 'Diffuse surface backscatter on land and crop fields';
   }, [currentVal, activeLayer]);
 
-  // Timeline playback (1100ms per step)
-  useEffect(() => {
-    if (!playing || !tsData || tsData.dates.length === 0) return;
-    const interval = setInterval(() => {
-      const nextIdx = (timelineIndex + 1) % tsData.dates.length;
-      onTimelineChange(nextIdx, tsData.dates[nextIdx]);
-    }, 1100);
-
-    return () => clearInterval(interval);
-  }, [playing, tsData, timelineIndex, onTimelineChange]);
-
-  const dates = tsData?.dates || ['2025-01-15'];
-  const currentDate = dates[timelineIndex] || dates[0];
+  const monthLabel = MONTH_NAMES[currentStep] || 'Jan';
+  const currentDate = dates[currentStep] || dates[0];
 
   return (
-    <footer className="absolute bottom-0 left-0 right-0 h-9 bg-[#FFFFFF]/95 backdrop-blur-md border-t border-[#E2E8F0] z-20 px-4 flex items-center justify-between text-xs select-none shadow-[0_-1px_3px_rgba(0,0,0,0.03)] font-sans">
-      {/* LEFT: LIVE CURSOR COORDINATES & PRIMARY READING */}
-      <div className="flex items-center gap-4">
-        {/* Coordinates */}
-        <div className="flex items-center gap-1.5 font-mono text-[11px] text-[#64748B]">
-          <span className="text-[#0F172A] font-medium">
-            {cursorCoords ? cursorCoords.lat.toFixed(4) : area.lat.toFixed(4)}° N,{' '}
-            {cursorCoords ? cursorCoords.lng.toFixed(4) : area.lng.toFixed(4)}° E
+    <footer className="absolute bottom-0 left-0 right-0 h-9 bg-[#F6F5F0] border-t border-[#D0CEC4] z-20 px-4 flex items-center justify-between text-xs select-none font-sans text-[#121417]">
+      {/* LEFT: LIVE CURSOR COORDINATES, CALIBRATED VALUE, SCATTERING MECHANISM */}
+      <div className="flex items-center gap-3 overflow-hidden">
+        {/* Live Cursor Latitude and Longitude */}
+        <div className="flex items-center gap-1 font-sans tabular-nums text-[11px] text-[#121417]/70 whitespace-nowrap">
+          <span>
+            {cursorCoords
+              ? `${Math.abs(cursorCoords.lat).toFixed(4)}° ${cursorCoords.lat >= 0 ? 'N' : 'S'}, ${Math.abs(cursorCoords.lng).toFixed(4)}° ${cursorCoords.lng >= 0 ? 'E' : 'W'}`
+              : `${Math.abs(area.lat).toFixed(4)}° ${area.lat >= 0 ? 'N' : 'S'}, ${Math.abs(area.lng).toFixed(4)}° ${area.lng >= 0 ? 'E' : 'W'}`}
           </span>
         </div>
 
-        <div className="w-[1px] h-3.5 bg-[#E2E8F0]" />
+        <div className="w-[1px] h-3 bg-[#D0CEC4] shrink-0" />
 
-        {/* Primary Reading */}
-        <div className="flex items-center gap-1.5 font-mono">
-          <span className="text-[#2563EB] font-bold tabular-nums text-xs">
-            {currentVal.val > 0 && activeLayer?.unit !== 'coherence' ? `+${currentVal.val.toFixed(2)}` : currentVal.val.toFixed(2)}
+        {/* Calibrated Radar Value */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className="font-display tabular-nums font-bold text-xs text-[#0047AB]">
+            {currentVal.val > 0 && activeLayer?.unit !== 'coherence'
+              ? `+${currentVal.val.toFixed(2)}`
+              : currentVal.val.toFixed(2)}{' '}
+            {currentVal.unit}
           </span>
-          <span className="text-[#64748B] text-[10px]">{currentVal.unit}</span>
-          <span className="text-[11px] text-[#64748B]">({activeLayer?.label || 'SAR'})</span>
+          <span className="font-sans text-[11px] text-[#121417]/60">
+            ({activeLayer?.label || 'SAR'})
+          </span>
         </div>
 
-        <div className="w-[1px] h-3.5 bg-[#E2E8F0]" />
+        <div className="w-[1px] h-3 bg-[#D0CEC4] shrink-0" />
 
-        {/* Plain English Scattering Mechanism */}
-        <div className="text-[11px] text-[#64748B] truncate max-w-[460px]">
-          <span className="text-[#0F172A] font-medium">{mechanismText.split('(')[0].trim()}</span>
-          {mechanismText.includes('(') && (
-            <span className="text-[#64748B] ml-1">({mechanismText.split('(')[1]}</span>
-          )}
+        {/* Plain-English Scattering Mechanism */}
+        <div className="text-[11px] font-sans text-[#121417]/85 truncate max-w-[420px]">
+          {mechanismText}
         </div>
       </div>
 
-      {/* RIGHT: COMPACT TIMELINE SCRUBBER */}
-      <div className="flex items-center gap-3">
+      {/* RIGHT: 12-STEP TIMELINE SCRUBBER WITH MONTH BADGE & TRACK */}
+      <div className="flex items-center gap-2.5 shrink-0 pl-2">
+        {/* Playback Controls (No emojis, clean SVG / typography) */}
         <div className="flex items-center gap-1">
           <button
             onClick={togglePlay}
-            className="w-5 h-5 rounded flex items-center justify-center bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#0F172A] border border-[#E2E8F0] text-[10px] transition-colors"
-            title={playing ? 'Pause timeline' : 'Play timeline'}
+            className="w-5 h-5 rounded flex items-center justify-center bg-[#EAE8E0] hover:bg-[#D0CEC4] text-[#121417] border border-[#D0CEC4] text-[10px] transition-colors"
+            title={isPlaying ? 'Pause 12-month cycle' : 'Play 12-month cycle'}
+            aria-label={isPlaying ? 'Pause 12-month cycle' : 'Play 12-month cycle'}
           >
-            {playing ? '⏸' : '▶'}
+            {isPlaying ? (
+              <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="currentColor">
+                <rect x="6" y="4" width="4" height="16" />
+                <rect x="14" y="4" width="4" height="16" />
+              </svg>
+            ) : (
+              <svg className="w-2.5 h-2.5 translate-x-0.5" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="5 3 19 12 5 21 5 3" />
+              </svg>
+            )}
           </button>
 
           <button
-            onClick={() => {
-              const prev = (timelineIndex - 1 + dates.length) % dates.length;
-              onTimelineChange(prev, dates[prev]);
-            }}
-            className="w-5 h-5 rounded flex items-center justify-center bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#64748B] hover:text-[#0F172A] border border-[#E2E8F0] text-[10px] transition-colors"
-            title="Previous step"
+            onClick={() => setStep(currentStep - 1)}
+            className="w-5 h-5 rounded flex items-center justify-center bg-[#EAE8E0] hover:bg-[#D0CEC4] text-[#121417] border border-[#D0CEC4] text-[11px] font-medium transition-colors"
+            title="Previous month"
+            aria-label="Previous month"
           >
             ‹
           </button>
 
           <button
-            onClick={() => {
-              const next = (timelineIndex + 1) % dates.length;
-              onTimelineChange(next, dates[next]);
-            }}
-            className="w-5 h-5 rounded flex items-center justify-center bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#64748B] hover:text-[#0F172A] border border-[#E2E8F0] text-[10px] transition-colors"
-            title="Next step"
+            onClick={() => setStep(currentStep + 1)}
+            className="w-5 h-5 rounded flex items-center justify-center bg-[#EAE8E0] hover:bg-[#D0CEC4] text-[#121417] border border-[#D0CEC4] text-[11px] font-medium transition-colors"
+            title="Next month"
+            aria-label="Next month"
           >
             ›
           </button>
         </div>
 
-        {/* Step indicator */}
-        <div className="flex items-center gap-2 font-mono text-[11px]">
-          <span className="text-[#64748B]">
-            {timelineIndex + 1}/{dates.length}
+        {/* 12-Step Scrubber Track */}
+        <div
+          className="flex items-center gap-0.5 w-24 h-2 cursor-pointer"
+          title={`Step ${currentStep + 1} of 12`}
+        >
+          {Array.from({ length: 12 }).map((_, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => setStep(i)}
+              className={`flex-1 h-1.5 transition-colors ${
+                i === currentStep
+                  ? 'bg-[#0047AB]'
+                  : i < currentStep
+                  ? 'bg-[#0047AB]/35'
+                  : 'bg-[#D0CEC4]'
+              }`}
+              title={`Step ${i + 1}/12 (${MONTH_NAMES[i]} 2025)`}
+              aria-label={`Step ${i + 1} of 12`}
+            />
+          ))}
+        </div>
+
+        {/* Step Indicator & Month Badge */}
+        <div className="flex items-center gap-1.5 font-sans tabular-nums text-[11px]">
+          <span className="text-[#121417]/70 font-medium">
+            Step {currentStep + 1}/12
           </span>
-          <span className="px-1.5 py-0.5 rounded bg-[#2563EB]/10 border border-[#2563EB]/20 text-[#2563EB] font-semibold text-[10px]">
-            {currentDate}
+          <span
+            className="px-1.5 py-0.5 rounded border border-[#0047AB]/25 bg-[#0047AB]/10 text-[#0047AB] font-semibold text-[10px] tabular-nums whitespace-nowrap"
+            title={currentDate}
+          >
+            {monthLabel} 2025
           </span>
         </div>
       </div>
     </footer>
   );
 }
-

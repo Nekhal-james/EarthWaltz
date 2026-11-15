@@ -8,6 +8,7 @@ import math
 import os
 from pathlib import Path
 import numpy as np
+from scipy.ndimage import gaussian_filter
 
 from .dem import fetch_dem_and_optical_for_bbox
 from .utils import (
@@ -106,9 +107,19 @@ def generate_kerala(out_dir):
 
     hh[water_mask] = rng.uniform(-24.5, -22.5, water_mask.sum())
     hh[ocean_mask] = -25.0
+
+    # Gaussian smoothing (sigma = 1.2)
+    hh = gaussian_filter(hh, sigma=1.2)
+    hh[polder_zone] = -4.8
+    hh[water_mask] = -23.5
+    hh[ocean_mask] = -25.0
     hh = np.clip(hh, -26.0, 0.5).astype(np.float32)
 
     rgba_hh = colormap_hh(hh)
+    # Keep Vembanad Lake solid (alpha = 215) and Kuttanad polders solid (alpha = 240)
+    rgba_hh[water_mask, 3] = 215
+    rgba_hh[polder_zone, 3] = 240
+    # Keep Arabian Sea west of Kerala coastline 100% masked (alpha = 0)
     rgba_hh[ocean_mask, 3] = 0
 
     write_geotiff(out / "hh_backscatter.tif", hh, bbox)
@@ -123,9 +134,13 @@ def generate_kerala(out_dir):
     hv = -20.5 + forest_contrib + noise * 0.6
     hv[water_mask] = -24.0
     hv[ocean_mask] = -25.0
+
+    hv = gaussian_filter(hv, sigma=1.2)
+    hv[water_mask] = -24.0
+    hv[ocean_mask] = -25.0
     hv = np.clip(hv, -25.0, -9.0).astype(np.float32)
 
-    rgba_hv = colormap_hv(hv)
+    rgba_hv = colormap_hv(hv, water_mask=water_mask)
     rgba_hv[ocean_mask, 3] = 0
 
     write_geotiff(out / "hv_backscatter.tif", hv, bbox)
@@ -140,6 +155,11 @@ def generate_kerala(out_dir):
     coh[water_mask] = 0.08
     coh[ocean_mask] = 0.02
     coh[urban_mask] = np.clip(0.80 + urban[urban_mask] * 0.16, 0.80, 0.95)
+
+    coh = gaussian_filter(coh, sigma=1.2)
+    coh[urban_mask] = np.clip(0.80 + urban[urban_mask] * 0.16, 0.80, 0.95)
+    coh[water_mask] = 0.08
+    coh[ocean_mask] = 0.02
     coh = np.clip(coh, 0.0, 1.0).astype(np.float32)
 
     rgba_coh = colormap_coherence(coh)
@@ -157,7 +177,14 @@ def generate_kerala(out_dir):
     subsidence = polder_zone & (phys["brightness"] < 0.28)
     phase[subsidence] = np.sin(elev[subsidence] * 3.5 + noise[subsidence] * 2.0) * 1.8
 
-    rgba_phase = colormap_phase(phase, coherence=coh)
+    # Deformation mask: steep Western Ghats slopes (z > 120m) and subsiding Kuttanad polders (z < 2.5m)
+    kerala_def_mask = np.zeros(SHAPE, dtype=np.float32)
+    kerala_active = ((elev > 120.0) | ((elev < 2.5) & (elev >= -2.5) & (~water_mask))) & (~ocean_mask)
+    kerala_def_mask[kerala_active] = 1.0
+    kerala_def_mask = gaussian_filter(kerala_def_mask, sigma=1.2)
+
+    phase = gaussian_filter(phase, sigma=1.2)
+    rgba_phase = colormap_phase(phase, coherence=coh, deformation_mask=kerala_def_mask)
     rgba_phase[ocean_mask, 3] = 0
 
     write_geotiff(out / "insar_phase.tif", phase, bbox)
@@ -209,6 +236,8 @@ def generate_amazon(out_dir):
     hh[urban_mask] = np.maximum(hh[urban_mask], -3.5 + urban[urban_mask] * 2.0)
 
     hh[water_mask] = rng.uniform(-24.5, -22.5, water_mask.sum())
+    hh = gaussian_filter(hh, sigma=1.2)
+    hh[water_mask] = -24.0
     hh = np.clip(hh, -25.0, 0.0).astype(np.float32)
 
     rgba_hh = colormap_hh(hh)
@@ -222,9 +251,11 @@ def generate_amazon(out_dir):
     hv = -22.0 + veg * 11.5 + noise * 0.6
     hv[varzea] = -12.0 + noise[varzea] * 0.8
     hv[water_mask] = -24.0
+    hv = gaussian_filter(hv, sigma=1.2)
+    hv[water_mask] = -24.0
     hv = np.clip(hv, -25.0, -9.0).astype(np.float32)
 
-    rgba_hv = colormap_hv(hv)
+    rgba_hv = colormap_hv(hv, water_mask=water_mask)
     write_geotiff(out / "hv_backscatter.tif", hv, bbox)
     write_webp(out / "hv_backscatter.webp", rgba_hv)
     write_telemetry_json(out / "telemetry_hv.json", hv, "dB", bbox)
@@ -234,6 +265,9 @@ def generate_amazon(out_dir):
     # Manaus urban center from real optical tile (U) = 0.82 to 0.94; Water = 0.05
     coh = np.full(SHAPE, 0.24, dtype=np.float32) + noise * 0.04
     coh[varzea] = 0.34 + noise[varzea] * 0.05
+    coh[urban_mask] = np.clip(0.80 + urban[urban_mask] * 0.15, 0.80, 0.94)
+    coh[water_mask] = 0.05
+    coh = gaussian_filter(coh, sigma=1.2)
     coh[urban_mask] = np.clip(0.80 + urban[urban_mask] * 0.15, 0.80, 0.94)
     coh[water_mask] = 0.05
     coh = np.clip(coh, 0.0, 1.0).astype(np.float32)
@@ -246,7 +280,11 @@ def generate_amazon(out_dir):
     # 4. InSAR Phase (Flooding wetland water level changes)
     phase = np.zeros(SHAPE, dtype=np.float32)
     phase[varzea] = np.sin((elev[varzea] - 12.0) * 0.8) * 2.2
-    rgba_phase = colormap_phase(phase, coherence=coh)
+    amazon_def_mask = np.zeros(SHAPE, dtype=np.float32)
+    amazon_def_mask[varzea] = 1.0
+    amazon_def_mask = gaussian_filter(amazon_def_mask, sigma=1.5)
+    phase = gaussian_filter(phase, sigma=1.2)
+    rgba_phase = colormap_phase(phase, coherence=coh, deformation_mask=amazon_def_mask)
 
     write_geotiff(out / "insar_phase.tif", phase, bbox)
     write_webp(out / "insar_phase.webp", rgba_phase)
@@ -255,8 +293,10 @@ def generate_amazon(out_dir):
     # SAOCOM L-Band
     saocom_hh = np.clip(hh * 0.98 - 0.4, -25.0, 0.0).astype(np.float32)
     saocom_hv = np.clip(hv * 0.98 - 0.5, -25.0, -9.0).astype(np.float32)
+    saocom_hh = gaussian_filter(saocom_hh, sigma=1.2)
+    saocom_hv = gaussian_filter(saocom_hv, sigma=1.2)
     rgba_saocom_hh = colormap_hh(saocom_hh)
-    rgba_saocom_hv = colormap_hv(saocom_hv)
+    rgba_saocom_hv = colormap_hv(saocom_hv, water_mask=water_mask)
     write_geotiff(out / "saocom_hh.tif", saocom_hh, bbox)
     write_webp(out / "saocom_hh.webp", rgba_saocom_hh)
     write_telemetry_json(out / "telemetry_saocom_hh.json", saocom_hh, "dB", bbox)
@@ -300,6 +340,7 @@ def generate_himalayas(out_dir):
     # Topographic layover and foreshortening on illuminated radar faces
     hh = -11.0 + np.clip(sar_layover - 1.0, -2.0, 2.5) * 4.0 + noise
     hh[ice_mask] = -6.5 + noise[ice_mask] * 0.8
+    hh = gaussian_filter(hh, sigma=1.2)
     hh = np.clip(hh, -24.0, 2.0).astype(np.float32)
 
     rgba_hh = colormap_hh(hh)
@@ -311,6 +352,7 @@ def generate_himalayas(out_dir):
     # Low volume scattering on bare rock and snow; high only in southern alpine valleys
     hv = -21.0 + np.clip((elev - 3000.0) / 3000.0, -2.0, 1.0) * 1.5 + noise * 0.7
     hv[ice_mask] = -16.5 + noise[ice_mask] * 0.8
+    hv = gaussian_filter(hv, sigma=1.2)
     hv = np.clip(hv, -25.0, -10.0).astype(np.float32)
 
     rgba_hv = colormap_hv(hv)
@@ -322,7 +364,12 @@ def generate_himalayas(out_dir):
     # High on exposed stable rock ridges (0.75 to 0.90); Moderate on debris-covered glaciers;
     # Low on active flowing ice / firn snow (0.15 to 0.30)
     coh = 0.50 + np.clip((sar_layover - 0.8) * 0.35, -0.25, 0.35) + noise * 0.05
+    rock_ridge = (slope_rad > 0.40) & (~ice_mask)
+    coh[rock_ridge] = np.clip(0.80 + noise[rock_ridge] * 0.10, 0.76, 0.92)
     coh[ice_mask] = 0.22 + noise[ice_mask] * 0.06
+    coh = gaussian_filter(coh, sigma=1.2)
+    coh[rock_ridge] = np.clip(coh[rock_ridge], 0.75, 0.92)
+    coh[ice_mask] = 0.22
     coh = np.clip(coh, 0.05, 0.95).astype(np.float32)
 
     rgba_coh = colormap_coherence(coh)
@@ -332,7 +379,12 @@ def generate_himalayas(out_dir):
 
     # 4. InSAR Phase (Elevation Contours)
     phase = np.sin(elev / 60.0) * np.pi
-    rgba_phase = colormap_phase(phase, coherence=coh)
+    ice_def_mask = np.zeros(SHAPE, dtype=np.float32)
+    ice_def_mask[ice_mask] = 1.0
+    ice_def_mask = gaussian_filter(ice_def_mask, sigma=1.5)
+    ice_def_mask = np.clip(ice_def_mask * 1.5, 0.0, 1.0).astype(np.float32)
+    phase = gaussian_filter(phase, sigma=1.2)
+    rgba_phase = colormap_phase(phase, coherence=coh, deformation_mask=ice_def_mask)
     write_geotiff(out / "insar_phase.tif", phase, bbox)
     write_webp(out / "insar_phase.webp", rgba_phase)
     write_telemetry_json(out / "telemetry_insar.json", phase, "rad", bbox)
@@ -347,6 +399,9 @@ def generate_himalayas(out_dir):
         flow_mag = np.clip(slope_rad[ice_mask] * 3.5, 0.4, 2.2)
         goff_range[ice_mask] = flow_mag * np.cos(phys["aspect_rad"][ice_mask])
         goff_az[ice_mask] = flow_mag * np.sin(phys["aspect_rad"][ice_mask])
+
+    goff_range = gaussian_filter(goff_range, sigma=1.2)
+    goff_az = gaussian_filter(goff_az, sigma=1.2)
 
     write_geotiff(out / "goff_range.tif", goff_range, bbox)
     write_webp(out / "goff_range.webp", colormap_diverging(goff_range, vmin=-2.0, vmax=2.0))
@@ -392,6 +447,8 @@ def generate_turkey(out_dir):
     urban_mask = (urban > 0.22) & (~water_mask)
     hh[urban_mask] = np.maximum(hh[urban_mask], -3.5 + urban[urban_mask] * 2.0)
     hh[water_mask] = -24.0
+    hh = gaussian_filter(hh, sigma=1.2)
+    hh[water_mask] = -24.0
     hh = np.clip(hh, -25.0, 0.5).astype(np.float32)
 
     rgba_hh = colormap_hh(hh)
@@ -402,9 +459,11 @@ def generate_turkey(out_dir):
     # 2. HV Backscatter
     hv = -20.5 + phys["veg_index"] * 8.0 + noise * 0.7
     hv[water_mask] = -24.0
+    hv = gaussian_filter(hv, sigma=1.2)
+    hv[water_mask] = -24.0
     hv = np.clip(hv, -25.0, -10.0).astype(np.float32)
 
-    rgba_hv = colormap_hv(hv)
+    rgba_hv = colormap_hv(hv, water_mask=water_mask)
     write_geotiff(out / "hv_backscatter.tif", hv, bbox)
     write_webp(out / "hv_backscatter.webp", rgba_hv)
     write_telemetry_json(out / "telemetry_hv.json", hv, "dB", bbox)
@@ -421,6 +480,9 @@ def generate_turkey(out_dir):
     rupture_zone = dist_fault < 12.0
     coh[rupture_zone] = np.clip(coh[rupture_zone] * 0.35, 0.12, 0.32)
     coh[water_mask] = 0.05
+    coh = gaussian_filter(coh, sigma=1.2)
+    coh[urban_mask] = np.clip(0.82 + urban[urban_mask] * 0.14, 0.82, 0.94)
+    coh[water_mask] = 0.05
     coh = np.clip(coh, 0.0, 1.0).astype(np.float32)
 
     rgba_coh = colormap_coherence(coh)
@@ -432,7 +494,10 @@ def generate_turkey(out_dir):
     # Asymmetric displacement across fault line + topography modulation
     slip = np.sign(yy - (0.85 * xx + 40.0)) * np.exp(-dist_fault / 120.0) * 3.8 * np.pi
     phase = np.sin(slip + elev / 85.0) * np.pi
-    rgba_phase = colormap_phase(phase, coherence=coh)
+    fault_def_mask = np.clip(np.exp(-dist_fault / 65.0), 0.0, 1.0).astype(np.float32)
+    fault_def_mask = gaussian_filter(fault_def_mask, sigma=1.2)
+    phase = gaussian_filter(phase, sigma=1.2)
+    rgba_phase = colormap_phase(phase, coherence=coh, deformation_mask=fault_def_mask)
 
     write_geotiff(out / "insar_phase.tif", phase, bbox)
     write_webp(out / "insar_phase.webp", rgba_phase)
@@ -474,6 +539,8 @@ def generate_punjab(out_dir):
     urban_mask = (urban > 0.22) & (~water_mask)
     hh[urban_mask] = np.maximum(hh[urban_mask], -3.5 + urban[urban_mask] * 2.0)
     hh[water_mask] = -24.0
+    hh = gaussian_filter(hh, sigma=1.2)
+    hh[water_mask] = -24.0
     hh = np.clip(hh, -25.0, 0.5).astype(np.float32)
 
     rgba_hh = colormap_hh(hh)
@@ -484,9 +551,11 @@ def generate_punjab(out_dir):
     # 2. HV Backscatter (Crop Biomass)
     hv = -21.0 + veg * 9.5 + noise * 0.7
     hv[water_mask] = -24.0
+    hv = gaussian_filter(hv, sigma=1.2)
+    hv[water_mask] = -24.0
     hv = np.clip(hv, -25.0, -10.0).astype(np.float32)
 
-    rgba_hv = colormap_hv(hv)
+    rgba_hv = colormap_hv(hv, water_mask=water_mask)
     write_geotiff(out / "hv_backscatter.tif", hv, bbox)
     write_webp(out / "hv_backscatter.webp", rgba_hv)
     write_telemetry_json(out / "telemetry_hv.json", hv, "dB", bbox)
@@ -494,6 +563,9 @@ def generate_punjab(out_dir):
     # 3. Coherence
     # High on fallow fields and towns (0.65 to 0.90); Moderate on growing crops (0.42 to 0.58)
     coh = 0.65 - veg * 0.28 + noise * 0.05
+    coh[urban_mask] = np.clip(0.82 + urban[urban_mask] * 0.14, 0.82, 0.94)
+    coh[water_mask] = 0.08
+    coh = gaussian_filter(coh, sigma=1.2)
     coh[urban_mask] = np.clip(0.82 + urban[urban_mask] * 0.14, 0.82, 0.94)
     coh[water_mask] = 0.08
     coh = np.clip(coh, 0.0, 1.0).astype(np.float32)
@@ -505,7 +577,11 @@ def generate_punjab(out_dir):
 
     # 4. InSAR Phase (Aquifer Subsidence Contours)
     phase = np.sin(phys["elevation"] * 0.4 + veg * 2.0) * np.pi
-    rgba_phase = colormap_phase(phase, coherence=coh)
+    punjab_def_mask = np.clip((veg - 0.25) / 0.25, 0.0, 1.0).astype(np.float32)
+    punjab_def_mask = gaussian_filter(punjab_def_mask, sigma=1.2)
+    punjab_def_mask = np.clip(punjab_def_mask * 1.5, 0.0, 1.0)
+    phase = gaussian_filter(phase, sigma=1.2)
+    rgba_phase = colormap_phase(phase, coherence=coh, deformation_mask=punjab_def_mask)
     write_geotiff(out / "insar_phase.tif", phase, bbox)
     write_webp(out / "insar_phase.webp", rgba_phase)
     write_telemetry_json(out / "telemetry_insar.json", phase, "rad", bbox)
@@ -513,9 +589,11 @@ def generate_punjab(out_dir):
     # 5. ISRO S-Band (9.3 cm — High sensitivity to crop canopy structure)
     sband_hh = np.clip(hh + veg * 2.5 - 0.8, -24.0, 1.0).astype(np.float32)
     sband_hv = np.clip(hv + veg * 3.2 - 0.5, -24.0, -9.0).astype(np.float32)
+    sband_hh = gaussian_filter(sband_hh, sigma=1.2)
+    sband_hv = gaussian_filter(sband_hv, sigma=1.2)
 
     rgba_sband_hh = colormap_hh(sband_hh)
-    rgba_sband_hv = colormap_hv(sband_hv)
+    rgba_sband_hv = colormap_hv(sband_hv, water_mask=water_mask)
     write_geotiff(out / "sband_hh.tif", sband_hh, bbox)
     write_webp(out / "sband_hh.webp", rgba_sband_hh)
     write_telemetry_json(out / "telemetry_sband_hh.json", sband_hh, "dB", bbox)
@@ -554,10 +632,17 @@ def generate_indonesia(out_dir):
     water_mask = phys["water_mask"]
     noise = multi_octave_noise(SHAPE, octaves=4, base_scale=60, seed=601) * 1.5 - 0.75
 
+    urban = phys["urban_index"]
+    urban_mask = (urban > 0.16) & (~water_mask)
+
     # 1. HH Backscatter
     hh = -11.5 + veg * 4.0 + noise
+    hh[urban_mask] = np.maximum(hh[urban_mask], -3.8 + urban[urban_mask] * 2.2)
     hh[water_mask] = -24.0
-    hh = np.clip(hh, -25.0, 0.0).astype(np.float32)
+    hh = gaussian_filter(hh, sigma=1.2)
+    hh[urban_mask] = np.maximum(hh[urban_mask], -3.8 + urban[urban_mask] * 2.2)
+    hh[water_mask] = -24.0
+    hh = np.clip(hh, -25.0, 0.5).astype(np.float32)
 
     rgba_hh = colormap_hh(hh)
     write_geotiff(out / "hh_backscatter.tif", hh, bbox)
@@ -567,15 +652,21 @@ def generate_indonesia(out_dir):
     # 2. HV Backscatter (Biomass)
     hv = -21.0 + veg * 10.5 + noise * 0.7
     hv[water_mask] = -24.0
+    hv = gaussian_filter(hv, sigma=1.2)
+    hv[water_mask] = -24.0
     hv = np.clip(hv, -25.0, -9.0).astype(np.float32)
 
-    rgba_hv = colormap_hv(hv)
+    rgba_hv = colormap_hv(hv, water_mask=water_mask)
     write_geotiff(out / "hv_backscatter.tif", hv, bbox)
     write_webp(out / "hv_backscatter.webp", rgba_hv)
     write_telemetry_json(out / "telemetry_hv.json", hv, "dB", bbox)
 
     # 3. Coherence
     coh = 0.52 - veg * 0.25 + noise * 0.05
+    coh[urban_mask] = np.clip(0.80 + urban[urban_mask] * 0.15, 0.80, 0.94)
+    coh[water_mask] = 0.06
+    coh = gaussian_filter(coh, sigma=1.2)
+    coh[urban_mask] = np.clip(0.80 + urban[urban_mask] * 0.15, 0.80, 0.94)
     coh[water_mask] = 0.06
     coh = np.clip(coh, 0.0, 1.0).astype(np.float32)
 
@@ -586,7 +677,11 @@ def generate_indonesia(out_dir):
 
     # 4. InSAR Phase (Peatland Subsidence)
     phase = np.sin(phys["elevation"] * 0.6) * np.pi
-    rgba_phase = colormap_phase(phase, coherence=coh)
+    peat_def_mask = np.clip((veg - 0.25) / 0.25, 0.0, 1.0).astype(np.float32)
+    peat_def_mask = gaussian_filter(peat_def_mask, sigma=1.2)
+    peat_def_mask = np.clip(peat_def_mask * 1.5, 0.0, 1.0)
+    phase = gaussian_filter(phase, sigma=1.2)
+    rgba_phase = colormap_phase(phase, coherence=coh, deformation_mask=peat_def_mask)
     write_geotiff(out / "insar_phase.tif", phase, bbox)
     write_webp(out / "insar_phase.webp", rgba_phase)
     write_telemetry_json(out / "telemetry_insar.json", phase, "rad", bbox)
@@ -594,8 +689,12 @@ def generate_indonesia(out_dir):
     # 5. RADARSAT C-Band (5.6 cm)
     cband_hv = np.clip(hv - 3.0 + veg * 1.5, -25.0, -9.0).astype(np.float32)
     cband_vv = np.clip(hh - 1.2 + veg * 1.2, -24.0, 0.5).astype(np.float32)
+    cband_vv[urban_mask] = np.maximum(cband_vv[urban_mask], -3.0)
+    cband_hv = gaussian_filter(cband_hv, sigma=1.2)
+    cband_vv = gaussian_filter(cband_vv, sigma=1.2)
+    cband_vv[urban_mask] = np.maximum(cband_vv[urban_mask], -3.0)
 
-    rgba_cband_hv = colormap_hv(cband_hv)
+    rgba_cband_hv = colormap_hv(cband_hv, water_mask=water_mask)
     rgba_cband_vv = colormap_hh(cband_vv)
     write_geotiff(out / "cband_hv.tif", cband_hv, bbox)
     write_webp(out / "cband_hv.webp", rgba_cband_hv)

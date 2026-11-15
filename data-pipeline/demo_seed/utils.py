@@ -444,94 +444,114 @@ def generate_goff(shape=(1024, 1024), direction='range', seed=42):
 def colormap_hh(data_db, vmin=-24.0, vmax=0.0):
     """
     HH Backscatter: Scientific Selective Anomaly Masking
-    - Standing water (< -16.5 dB): Deep Electric Cyan-Blue (#0284C7 -> #38BDF8, alpha = 220)
-    - Normal dry land (-16 dB to -7 dB): Subtle dark slate (#1E293B, alpha = 35) -> real satellite topography shows through!
-    - Double-bounce / Inundation (> -6.5 dB): Glowing Amber-Gold (#F59E0B -> #FEF08A, alpha = 235)
+    - Specular open water and flood (< -17.5 dB): deep cobalt-cyan #0284C7 ([2, 132, 199]) to #38BDF8 ([56, 189, 248]), alpha = 215.0
+    - Double-bounce flooded crops, submerged polders, urban (> -6.8 dB): signal gold #F59E0B ([245, 158, 11]) to #FEF08A ([254, 240, 138]), alpha = 240.0
+    - Normal mid-range dry land (-17.5 <= dB <= -6.8): transparent alpha = 18.0 (<= 25)
+    - Alpha clipped to [0, 245]
     """
     norm = np.clip((data_db - vmin) / (vmax - vmin), 0.0, 1.0)
     h, w = norm.shape
     rgba = np.zeros((h, w, 4), dtype=np.uint8)
 
-    c_water = np.array([2, 132, 199], dtype=np.float64)       # Deep Electric Cyan #0284C7 (-24 dB)
-    c_water_high = np.array([56, 189, 248], dtype=np.float64) # Light Cyan #38BDF8 (-16.5 dB)
+    c_water = np.array([2, 132, 199], dtype=np.float64)       # Deep Cobalt-Cyan #0284C7 (-24 dB)
+    c_water_high = np.array([56, 189, 248], dtype=np.float64) # Light Cyan #38BDF8 (-17.5 dB)
     c_land = np.array([30, 41, 59], dtype=np.float64)         # Translucent Slate #1E293B (-12 dB)
-    c_amber = np.array([245, 158, 11], dtype=np.float64)      # Amber #F59E0B (-6.5 dB)
-    c_gold = np.array([254, 240, 138], dtype=np.float64)      # Gold #FEF08A (0 dB)
+    c_amber = np.array([245, 158, 11], dtype=np.float64)      # Signal Gold #F59E0B (-6.8 dB)
+    c_gold = np.array([254, 240, 138], dtype=np.float64)      # Pale Gold #FEF08A (0 dB)
 
-    m0 = norm < 0.31
-    m1 = (norm >= 0.31) & (norm < 0.52)
-    m2 = (norm >= 0.52) & (norm < 0.73)
-    m3 = norm >= 0.73
+    t1 = (-17.5 - vmin) / (vmax - vmin)
+    t_mid = (-12.0 - vmin) / (vmax - vmin)
+    t2 = (-6.8 - vmin) / (vmax - vmin)
 
-    t0 = norm[m0] / 0.31
-    t1 = (norm[m1] - 0.31) / 0.21
-    t2 = (norm[m2] - 0.52) / 0.21
-    t3 = (norm[m3] - 0.73) / 0.27
+    m0 = norm < t1
+    m1 = (norm >= t1) & (norm < t_mid)
+    m2 = (norm >= t_mid) & (norm < t2)
+    m3 = norm >= t2
+
+    t0_interp = norm[m0] / t1
+    t1_interp = (norm[m1] - t1) / (t_mid - t1)
+    t2_interp = (norm[m2] - t_mid) / (t2 - t_mid)
+    t3_interp = (norm[m3] - t2) / (1.0 - t2)
 
     for c in range(3):
-        rgba[..., c][m0] = ((1.0 - t0) * c_water[c] + t0 * c_water_high[c]).astype(np.uint8)
-        rgba[..., c][m1] = ((1.0 - t1) * c_water_high[c] + t1 * c_land[c]).astype(np.uint8)
-        rgba[..., c][m2] = ((1.0 - t2) * c_land[c] + t2 * c_amber[c]).astype(np.uint8)
-        rgba[..., c][m3] = ((1.0 - t3) * c_amber[c] + t3 * c_gold[c]).astype(np.uint8)
+        rgba[..., c][m0] = ((1.0 - t0_interp) * c_water[c] + t0_interp * c_water_high[c]).astype(np.uint8)
+        rgba[..., c][m1] = ((1.0 - t1_interp) * c_water_high[c] + t1_interp * c_land[c]).astype(np.uint8)
+        rgba[..., c][m2] = ((1.0 - t2_interp) * c_land[c] + t2_interp * c_amber[c]).astype(np.uint8)
+        rgba[..., c][m3] = ((1.0 - t3_interp) * c_amber[c] + t3_interp * c_gold[c]).astype(np.uint8)
 
     # SELECTIVE ANOMALY ALPHA MASKING
-    alpha = np.full((h, w), 35.0, dtype=np.float64)
-    # Water anomaly (< -16.5 dB): High opacity (120 to 225)
-    water_mask = data_db < -16.5
-    t_w = np.clip((-16.5 - data_db[water_mask]) / 7.5, 0.0, 1.0)
-    alpha[water_mask] = 120.0 + t_w * 105.0
+    # Normal mid-range dry land: -17.5 <= dB <= -6.8, transparent alpha = 18.0 (must be <= 25)
+    alpha = np.full((h, w), 18.0, dtype=np.float64)
 
-    # Double-bounce / Flooded vegetation anomaly (> -7.0 dB): High opacity (140 to 240)
-    bounce_mask = data_db > -7.0
-    t_b = np.clip((data_db[bounce_mask] - (-7.0)) / 7.0, 0.0, 1.0)
-    alpha[bounce_mask] = 140.0 + t_b * 100.0
+    # Specular open water and flood (< -17.5 dB): alpha = 215.0
+    water_mask = data_db < -17.5
+    alpha[water_mask] = 215.0
 
-    rgba[..., 3] = np.clip(alpha, 30, 245).astype(np.uint8)
+    # Double-bounce flooded crops, submerged polders, urban (> -6.8 dB): alpha = 240.0
+    bounce_mask = data_db > -6.8
+    alpha[bounce_mask] = 240.0
+
+    rgba[..., 3] = np.clip(alpha, 0, 245).astype(np.uint8)
     return rgba
 
 
-def colormap_hv(data_db, vmin=-24.0, vmax=-9.0):
+def colormap_hv(data_db, vmin=-24.0, vmax=-9.0, water_mask=None):
     """
     HV Biomass & Forest Canopy / Deforestation Colormap:
-    - High-contrast Coral-Red (#F43F5E, alpha = 225) for severe deforestation / burn scars (< -18 dB)
-    - Moderate vegetation (-17 to -13 dB): Subtle translucent tint (alpha = 35) -> real satellite shows through!
-    - Dense intact forest / canopy (> -12.5 dB): Rich Emerald (#10B981, alpha = 205)
+    - Dense high-biomass canopy (> -12.0 dB): vivid canopy emerald #10B981 ([16, 185, 129]), alpha = 195.0
+    - Deforested clear-cuts, logging scars, burn scars on land (< -17.5 dB outside rivers): vermilion-coral #E11D48 ([225, 29, 72]), alpha = 230.0
+    - Moderate vegetation (-17.5 <= dB <= -12.0): alpha = 20.0
+    - Water in HV: alpha = 15.0
+    - Alpha clipped to [0, 235]
     """
     norm = np.clip((data_db - vmin) / (vmax - vmin), 0.0, 1.0)
     h, w = norm.shape
     rgba = np.zeros((h, w, 4), dtype=np.uint8)
 
-    c_deforest = np.array([244, 63, 94], dtype=np.float64)   # Coral-Red #F43F5E (< -19 dB)
-    c_cleared = np.array([251, 146, 60], dtype=np.float64)   # Orange #FB923C (-17.5 dB)
+    c_deforest = np.array([225, 29, 72], dtype=np.float64)   # Vermilion-Coral #E11D48 (< -17.5 dB)
+    c_cleared = np.array([251, 146, 60], dtype=np.float64)   # Orange #FB923C (-16 dB)
     c_mid = np.array([52, 115, 87], dtype=np.float64)        # Muted Forest #347357 (-14 dB)
-    c_canopy = np.array([16, 185, 129], dtype=np.float64)    # Emerald #10B981 (> -11 dB)
+    c_canopy = np.array([16, 185, 129], dtype=np.float64)    # Vivid Canopy Emerald #10B981 (> -12 dB)
+    c_water = np.array([30, 41, 59], dtype=np.float64)       # Dark Slate for water
 
-    m0 = norm < 0.35
-    m1 = (norm >= 0.35) & (norm < 0.65)
-    m2 = norm >= 0.65
+    t_loss = (-17.5 - vmin) / (vmax - vmin)
+    t_mid = (-14.5 - vmin) / (vmax - vmin)
+    t_canopy = (-12.0 - vmin) / (vmax - vmin)
 
-    t0 = norm[m0] / 0.35
-    t1 = (norm[m1] - 0.35) / 0.30
-    t2 = (norm[m2] - 0.65) / 0.35
+    m0 = norm < t_loss
+    m1 = (norm >= t_loss) & (norm < t_mid)
+    m2 = (norm >= t_mid) & (norm < t_canopy)
+    m3 = norm >= t_canopy
+
+    t1_interp = (norm[m1] - t_loss) / (t_mid - t_loss)
+    t2_interp = (norm[m2] - t_mid) / (t_canopy - t_mid)
 
     for c in range(3):
-        rgba[..., c][m0] = ((1.0 - t0) * c_deforest[c] + t0 * c_cleared[c]).astype(np.uint8)
-        rgba[..., c][m1] = ((1.0 - t1) * c_cleared[c] + t1 * c_mid[c]).astype(np.uint8)
-        rgba[..., c][m2] = ((1.0 - t2) * c_mid[c] + t2 * c_canopy[c]).astype(np.uint8)
+        rgba[..., c][m0] = int(c_deforest[c])
+        rgba[..., c][m1] = ((1.0 - t1_interp) * c_cleared[c] + t1_interp * c_mid[c]).astype(np.uint8)
+        rgba[..., c][m2] = ((1.0 - t2_interp) * c_mid[c] + t2_interp * c_canopy[c]).astype(np.uint8)
+        rgba[..., c][m3] = int(c_canopy[c])
 
-    # Selective alpha masking:
-    alpha = np.full((h, w), 35.0, dtype=np.float64)
-    # Dense canopy (> -13.0 dB)
-    canopy_mask = data_db > -13.0
-    t_c = np.clip((data_db[canopy_mask] - (-13.0)) / 4.0, 0.0, 1.0)
-    alpha[canopy_mask] = 110.0 + t_c * 95.0
+    # Moderate vegetation (-17.5 <= dB <= -12.0): alpha = 20.0
+    alpha = np.full((h, w), 20.0, dtype=np.float64)
 
-    # Severe loss / clearcut (< -18.5 dB)
-    loss_mask = data_db < -18.5
-    t_l = np.clip((-18.5 - data_db[loss_mask]) / 5.5, 0.0, 1.0)
-    alpha[loss_mask] = 120.0 + t_l * 105.0
+    # Dense high-biomass canopy (> -12.0 dB): alpha = 195.0
+    canopy_mask = data_db > -12.0
+    alpha[canopy_mask] = 195.0
 
-    rgba[..., 3] = np.clip(alpha, 30, 235).astype(np.uint8)
+    # Deforested clear-cuts, logging scars, burn scars on land (< -17.5 dB outside rivers/water): alpha = 230.0
+    loss_mask = data_db < -17.5
+    if water_mask is not None:
+        loss_mask = loss_mask & (~water_mask)
+    alpha[loss_mask] = 230.0
+
+    # Water in HV: alpha = 15.0
+    if water_mask is not None:
+        for c in range(3):
+            rgba[..., c][water_mask] = int(c_water[c])
+        alpha[water_mask] = 15.0
+
+    rgba[..., 3] = np.clip(alpha, 0, 235).astype(np.uint8)
     return rgba
 
 
@@ -540,11 +560,13 @@ def colormap_backscatter(data_db, vmin=-24.0, vmax=0.0):
     return colormap_hh(data_db, vmin=vmin, vmax=vmax)
 
 
-def colormap_phase(data_rad, coherence=None):
+def colormap_phase(data_rad, coherence=None, deformation_mask=None):
     """
     Interferogram rainbow colormap for InSAR phase [-π, π].
-    When coherence is provided, low-coherence regions (< 0.35) have natural
+    When coherence is provided, low-coherence regions (< 0.38) have natural
     decorrelation speckle noise blended in so fringes look authentic.
+    When deformation_mask is provided, active deformation zones render with alpha = 220,
+    while stable flat plains fade to alpha = 15.
     """
     wrapped = np.arctan2(np.sin(data_rad), np.cos(data_rad))
     norm = np.clip((wrapped + np.pi) / (2.0 * np.pi), 0.0, 1.0)
@@ -566,7 +588,6 @@ def colormap_phase(data_rad, coherence=None):
         out[mask, 0] = r[mask]
         out[mask, 1] = g[mask]
         out[mask, 2] = b[mask]
-    out[..., 3] = 255
 
     # Blend natural decorrelation speckle in low-coherence areas
     if coherence is not None:
@@ -578,41 +599,65 @@ def colormap_phase(data_rad, coherence=None):
                 (1.0 - t_blend) * out[low_coh, :3] + t_blend * speckle
             ).astype(np.uint8)
 
+    # SELECTIVE ANOMALY ALPHA MASKING
+    if deformation_mask is not None:
+        def_norm = np.clip(deformation_mask.astype(np.float64), 0.0, 1.0)
+        alpha = 15.0 + def_norm * (220.0 - 15.0)
+    else:
+        # Default fallback if mask is omitted: fade stable plains to 15, highlight fringes
+        grad_y, grad_x = np.gradient(data_rad)
+        grad = np.sqrt(grad_y**2 + grad_x**2)
+        act = np.clip((grad - 0.05) / 0.35, 0.0, 1.0)
+        alpha = 15.0 + act * (220.0 - 15.0)
+
+    out[..., 3] = np.clip(alpha, 15, 220).astype(np.uint8)
     return out
 
 
 def colormap_coherence(data_coh):
     """
-    Calibrated Basalt (#111210) -> Mid Gray (#4B5563) -> Crisp Pure White (#FFFFFF).
-    Selective alpha: High coherence urban/rock structures glow at alpha=220, low coherence forest/water fades to alpha=35.
+    Calibrated Coherence Colormap:
+    - High coherence built-up urban footprints (> 0.72): crisp white/cyan (#CFFAFE to #FFFFFF), alpha = 225.0
+    - Low-coherence decorrelated zones (< 0.30): deep violet #4C1D95 ([76, 29, 149]), alpha = 160.0
+    - Mid-range (0.30 <= gamma <= 0.72): alpha = 25.0
+    - Alpha clipped to [0, 230]
     """
     norm = np.clip(data_coh, 0.0, 1.0)
     h, w = norm.shape
     rgba = np.zeros((h, w, 4), dtype=np.uint8)
 
-    c0 = np.array([17, 18, 16], dtype=np.float64)    # Basalt
-    c1 = np.array([75, 85, 99], dtype=np.float64)    # Mid Gray
-    c2 = np.array([255, 255, 255], dtype=np.float64) # Pure White
+    c_violet = np.array([76, 29, 149], dtype=np.float64)   # Deep Violet #4C1D95 (< 0.30)
+    c_gray = np.array([75, 85, 99], dtype=np.float64)       # Mid Gray #4B5563 (0.30 to 0.72)
+    c_cyan = np.array([207, 250, 254], dtype=np.float64)   # Crisp Cyan #CFFAFE (0.72)
+    c_white = np.array([255, 255, 255], dtype=np.float64)  # Pure White #FFFFFF (1.00)
 
-    m0 = norm < 0.50
-    t0 = norm[m0] / 0.50
-    t1 = (norm[~m0] - 0.50) / 0.50
+    m_low = norm < 0.30
+    m_mid = (norm >= 0.30) & (norm <= 0.72)
+    m_high = norm > 0.72
+
+    t_low = norm[m_low] / 0.30
+    t_mid = (norm[m_mid] - 0.30) / (0.72 - 0.30)
+    t_high = (norm[m_high] - 0.72) / (1.0 - 0.72)
 
     for c in range(3):
-        rgba[..., c][m0] = ((1.0 - t0) * c0[c] + t0 * c1[c]).astype(np.uint8)
-        rgba[..., c][~m0] = ((1.0 - t1) * c1[c] + t1 * c2[c]).astype(np.uint8)
+        rgba[..., c][m_low] = ((1.0 - t_low) * c_violet[c] + t_low * c_gray[c]).astype(np.uint8)
+        rgba[..., c][m_mid] = ((1.0 - t_mid) * c_gray[c] + t_mid * c_cyan[c]).astype(np.uint8)
+        rgba[..., c][m_high] = ((1.0 - t_high) * c_cyan[c] + t_high * c_white[c]).astype(np.uint8)
 
-    alpha = np.full((h, w), 35.0, dtype=np.float64)
-    hi = norm > 0.65
-    t_h = np.clip((norm[hi] - 0.65) / 0.35, 0.0, 1.0)
-    alpha[hi] = 120.0 + t_h * 110.0
+    # Selective alpha masking
+    alpha = np.full((h, w), 25.0, dtype=np.float64) # Mid-range: 0.30 <= gamma <= 0.72 -> alpha = 25.0
+    alpha[m_low] = 160.0                            # Low-coherence: < 0.30 -> alpha = 160.0
+    alpha[m_high] = 225.0                           # High-coherence: > 0.72 -> alpha = 225.0
 
-    rgba[..., 3] = np.clip(alpha, 30, 235).astype(np.uint8)
+    rgba[..., 3] = np.clip(alpha, 0, 230).astype(np.uint8)
     return rgba
 
 
 def colormap_diverging(data, vmin=-2.0, vmax=2.0):
-    """Blue -> White -> Red diverging colormap for GOFF displacement."""
+    """
+    Blue -> White -> Red diverging colormap for GOFF displacement.
+    Active flow: alpha = 220; stable near-zero: alpha = 15.
+    """
     mid = 0.0
     rng = max(abs(vmax - mid), abs(vmin - mid), 1e-10)
     norm = np.clip((data - mid) / rng, -1.0, 1.0)
@@ -629,7 +674,12 @@ def colormap_diverging(data, vmin=-2.0, vmax=2.0):
     for c in range(3):
         rgba[..., c][neg] = ((1.0 - t_neg) * blue[c] + t_neg * white[c]).astype(np.uint8)
         rgba[..., c][~neg] = ((1.0 - t_pos) * white[c] + t_pos * red[c]).astype(np.uint8)
-    rgba[..., 3] = 255
+
+    flow_mag = np.abs(data)
+    alpha = np.full(data.shape, 15.0, dtype=np.float64)
+    active = flow_mag > 0.08
+    alpha[active] = 220.0
+    rgba[..., 3] = np.clip(alpha, 15, 220).astype(np.uint8)
     return rgba
 
 

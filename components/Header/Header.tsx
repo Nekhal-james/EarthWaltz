@@ -27,10 +27,19 @@ interface HeaderProps {
 }
 
 const BASEMAPS: Record<BasemapStyle, { label: string }> = {
-  'esri-satellite': { label: 'Esri Satellite' },
-  'dark-matter': { label: 'Dark Gray Canvas' },
-  'gibs-truecolor': { label: 'NASA VIIRS TrueColor' },
-  'positron': { label: 'Light Gray Canvas' },
+  'esri-satellite': { label: 'Esri satellite' },
+  'dark-matter': { label: 'Dark gray canvas' },
+  'gibs-truecolor': { label: 'NASA VIIRS truecolor' },
+  'positron': { label: 'Light gray canvas' },
+};
+
+const REGION_NAMES: Record<string, string> = {
+  kerala: 'Kerala',
+  amazon: 'Amazon',
+  himalayas: 'Himalayas',
+  turkey: 'Turkey',
+  punjab: 'Punjab',
+  indonesia: 'Sumatra',
 };
 
 export default function Header({
@@ -58,7 +67,6 @@ export default function Header({
   const [toolsOpen, setToolsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
 
-  // Close popover when clicking outside
   useEffect(() => {
     const handleOutsideClick = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -70,118 +78,117 @@ export default function Header({
   }, []);
 
   return (
-    <header className="h-14 w-full bg-[#FFFFFF] border-b border-[#E2E8F0] flex items-center justify-between px-4 z-40 select-none shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
-      {/* LEFT: BRAND IDENTITY */}
-      <div className="flex items-center gap-3">
-        <div className="w-2.5 h-2.5 rounded-full bg-[#2563EB]" />
+    <header className="h-12 w-full bg-[#F6F5F0] border-b border-[#D0CEC4] flex items-center justify-between px-4 z-40 select-none">
+      {/* Brand Identity */}
+      <div className="flex items-center gap-2.5">
+        <div className="w-2 h-2 rounded-full bg-[#0047AB]" />
         <div className="flex items-baseline gap-2">
-          <span className="font-sans font-bold text-base tracking-tight text-[#0F172A]">EarthWaltz</span>
-          <span className="text-[#CBD5E1]">/</span>
-          <span className="text-xs font-medium text-[#64748B]">NISAR L+S Observatory</span>
+          <span className="font-display font-bold text-base tracking-tight text-[#121417]">EarthWaltz</span>
+          <span className="text-[#D0CEC4]">/</span>
+          <span className="text-xs font-normal text-[#121417]/70">NISAR L+S observatory</span>
         </div>
       </div>
 
-      {/* CENTER: 6 HORIZONTAL STUDY AREA TABS (In Instrument Mode) */}
-      {mode === 'instrument' && (
-        <div className="hidden lg:flex items-center bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg p-0.5">
-          {areas.map((area) => {
-            const isActive = area.id === activeArea.id;
-            const label = area.id === 'indonesia' ? 'Sumatra' : area.name.split(',')[0].trim();
-            return (
-              <button
-                key={area.id}
-                onClick={() => onAreaChange(area)}
-                className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
-                  isActive
-                    ? 'bg-[#2563EB] text-white shadow-sm'
-                    : 'text-[#64748B] hover:text-[#0F172A] hover:bg-[#F1F5F9]'
-                }`}
-              >
-                {label}
-              </button>
-            );
-          })}
-        </div>
-      )}
+      {/* 6 Region Tabs - Permanently Visible Across BOTH Modes */}
+      <div className="hidden md:flex items-center bg-[#EAE8E0] border border-[#D0CEC4] p-0.5">
+        {areas.map((area) => {
+          const isActive = area.id === activeArea.id;
+          const label = REGION_NAMES[area.id] || area.name.split(',')[0].trim();
+          return (
+            <button
+              key={area.id}
+              onClick={() => onAreaChange(area)}
+              className={`px-3 py-1 text-xs font-medium transition-colors ${
+                isActive
+                  ? 'bg-[#0047AB] text-white font-semibold'
+                  : 'text-[#121417]/80 hover:text-[#121417] hover:bg-[#D0CEC4]/50'
+              }`}
+            >
+              {label}
+            </button>
+          );
+        })}
+      </div>
 
-      {/* RIGHT: TACTILE MODE SWITCHER & WORKBENCH CONTROLS */}
-      <div className="flex items-center gap-3 relative" ref={dropdownRef}>
-        {/* GLOBAL 2-WAY SEGMENTED MODE SWITCHER */}
-        <div className="flex items-center bg-[#F1F5F9] border border-[#E2E8F0] rounded-lg p-0.5 shadow-inner">
+      {/* Right Controls: Mode Switch, Snapshot Export, and Options */}
+      <div className="flex items-center gap-2.5 relative" ref={dropdownRef}>
+        {/* Mode Switch: [ Overview | Workbench ] */}
+        <div className="flex items-center bg-[#EAE8E0] border border-[#D0CEC4] p-0.5">
           <button
             onClick={() => onModeChange('story')}
-            className={`px-3 py-1 text-xs font-semibold rounded-md transition-all flex items-center gap-1.5 ${
+            className={`px-2.5 py-1 text-xs font-medium transition-colors ${
               mode === 'story'
-                ? 'bg-[#2563EB] text-white shadow-sm'
-                : 'text-[#64748B] hover:text-[#0F172A]'
+                ? 'bg-[#0047AB] text-white font-semibold'
+                : 'text-[#121417]/75 hover:text-[#121417]'
             }`}
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-white/90" />
-            <span>Story mode</span>
+            Overview
           </button>
-
           <button
             onClick={() => onModeChange('instrument')}
-            className={`px-3 py-1 text-xs font-semibold rounded-md transition-all flex items-center gap-1.5 ${
+            className={`px-2.5 py-1 text-xs font-medium transition-colors ${
               mode === 'instrument'
-                ? 'bg-[#0F172A] text-white shadow-sm'
-                : 'text-[#64748B] hover:text-[#0F172A]'
+                ? 'bg-[#0047AB] text-white font-semibold'
+                : 'text-[#121417]/75 hover:text-[#121417]'
             }`}
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" />
-            <span>Instrument mode</span>
+            Workbench
           </button>
         </div>
 
-        {/* WORKBENCH QUICK ACTIONS (In Instrument Mode) */}
+        {/* Snapshot Export Button - Surfaced Directly on Header Bar */}
+        <button
+          onClick={onExportSnapshot}
+          className="px-2.5 py-1 text-xs font-medium border border-[#D0CEC4] bg-[#EAE8E0] text-[#121417] hover:bg-[#D0CEC4]/60 transition-colors"
+        >
+          Export snapshot
+        </button>
+
+        {/* Workbench Quick Actions */}
         {mode === 'instrument' && (
-          <div className="flex items-center gap-2">
-            {/* Split Compare Button */}
+          <div className="hidden xl:flex items-center gap-1.5">
             <button
               onClick={onToggleSlider}
-              className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors border ${
+              className={`px-2 py-1 text-xs font-medium border transition-colors ${
                 showSlider
-                  ? 'bg-[#2563EB]/10 text-[#2563EB] border-[#2563EB]/40 font-semibold'
-                  : 'bg-[#F8FAFC] border-[#E2E8F0] text-[#64748B] hover:text-[#0F172A] hover:bg-[#F1F5F9]'
+                  ? 'bg-[#0047AB] text-white border-[#0047AB]'
+                  : 'bg-[#EAE8E0] border-[#D0CEC4] text-[#121417] hover:bg-[#D0CEC4]/50'
               }`}
             >
               Split compare
             </button>
 
-            {/* Guided Tour Button */}
             <button
               onClick={onToggleTour}
-              className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors flex items-center gap-1.5 border ${
+              className={`px-2 py-1 text-xs font-medium border transition-colors ${
                 isTourPlaying
-                  ? 'bg-[#2563EB]/10 text-[#2563EB] border-[#2563EB]/50 font-semibold'
-                  : 'bg-[#F8FAFC] border-[#E2E8F0] text-[#64748B] hover:text-[#0F172A] hover:bg-[#F1F5F9]'
+                  ? 'bg-[#0047AB] text-white border-[#0047AB]'
+                  : 'bg-[#EAE8E0] border-[#D0CEC4] text-[#121417] hover:bg-[#D0CEC4]/50'
               }`}
             >
-              {isTourPlaying && <span className="w-1.5 h-1.5 rounded-full bg-[#2563EB] animate-pulse" />}
-              <span>{isTourPlaying ? `Tour (${tourIndex + 1}/${tourTotal})` : 'Guided tour'}</span>
+              {isTourPlaying ? `Tour (${tourIndex + 1}/${tourTotal})` : 'Guided tour'}
             </button>
           </div>
         )}
 
-        {/* Tools & Export Popover Trigger */}
+        {/* Tools Menu Trigger */}
         <button
           onClick={() => setToolsOpen((p) => !p)}
-          className={`flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-md transition-colors border ${
+          className={`px-2 py-1 text-xs font-medium border transition-colors ${
             toolsOpen
-              ? 'bg-[#F1F5F9] text-[#0F172A] border-[#CBD5E1]'
-              : 'bg-[#F8FAFC] border-[#E2E8F0] text-[#64748B] hover:text-[#0F172A] hover:bg-[#F1F5F9]'
+              ? 'bg-[#D0CEC4] text-[#121417] border-[#D0CEC4]'
+              : 'bg-[#EAE8E0] border-[#D0CEC4] text-[#121417] hover:bg-[#D0CEC4]/50'
           }`}
         >
-          <span>Tools & export</span>
-          <span className="text-[10px] text-[#64748B]">▾</span>
+          Tools
         </button>
 
-        {/* Tools / Export Popover Menu */}
+        {/* Tools Popover Menu */}
         {toolsOpen && (
-          <div className="absolute right-0 top-11 w-72 bg-[#FFFFFF] border border-[#E2E8F0] rounded-xl shadow-xl p-3 z-50 flex flex-col gap-3 font-sans">
+          <div className="absolute right-0 top-10 w-72 bg-[#F6F5F0] border border-[#D0CEC4] shadow-md p-3 z-50 flex flex-col gap-3 font-sans">
             {/* Basemap Selection */}
             <div>
-              <label className="text-[11px] font-semibold text-[#64748B] block mb-1">
+              <label className="text-[11px] font-medium text-[#121417]/70 block mb-1">
                 Basemap layer
               </label>
               <div className="grid grid-cols-2 gap-1">
@@ -189,10 +196,10 @@ export default function Header({
                   <button
                     key={key}
                     onClick={() => onBasemapChange(key as BasemapStyle)}
-                    className={`px-2 py-1 text-xs rounded text-left transition-colors border ${
+                    className={`px-2 py-1 text-xs text-left transition-colors border ${
                       basemap === key
-                        ? 'bg-[#2563EB] text-white border-[#2563EB] font-medium'
-                        : 'bg-[#F8FAFC] border-[#E2E8F0] text-[#475569] hover:text-[#0F172A] hover:bg-[#F1F5F9]'
+                        ? 'bg-[#0047AB] text-white border-[#0047AB] font-medium'
+                        : 'bg-[#EAE8E0] border-[#D0CEC4] text-[#121417] hover:bg-[#D0CEC4]/40'
                     }`}
                   >
                     {item.label}
@@ -203,9 +210,9 @@ export default function Header({
 
             {/* Swath Opacity Slider */}
             <div>
-              <div className="flex items-center justify-between text-[11px] font-semibold text-[#64748B] mb-1">
+              <div className="flex items-center justify-between text-[11px] font-medium text-[#121417]/70 mb-1">
                 <span>SAR swath opacity</span>
-                <span className="font-mono text-[#0F172A]">{Math.round(opacity * 100)}%</span>
+                <span className="font-sans tabular-nums text-[#121417]">{Math.round(opacity * 100)}%</span>
               </div>
               <input
                 type="range"
@@ -214,33 +221,21 @@ export default function Header({
                 step="0.05"
                 value={opacity}
                 onChange={(e) => onOpacityChange(parseFloat(e.target.value))}
-                className="w-full h-1 bg-[#E2E8F0] rounded-lg appearance-none cursor-pointer accent-[#2563EB]"
+                className="w-full h-1 bg-[#D0CEC4] appearance-none cursor-pointer accent-[#0047AB]"
               />
             </div>
 
-            <div className="border-t border-[#E2E8F0] pt-2 flex flex-col gap-1.5">
-              {/* Export High-Res PNG */}
-              <button
-                onClick={() => {
-                  onExportSnapshot?.();
-                  setToolsOpen(false);
-                }}
-                className="w-full px-2.5 py-1.5 text-xs text-left font-medium rounded bg-[#F8FAFC] hover:bg-[#F1F5F9] border border-[#E2E8F0] text-[#0F172A] flex items-center justify-between transition-colors"
-              >
-                <span>Export annotated PNG snapshot</span>
-                <span className="text-[10px] font-mono text-[#64748B]">PNG</span>
-              </button>
-
+            <div className="border-t border-[#D0CEC4] pt-2 flex flex-col gap-1.5">
               {/* Radar Physics Explainer */}
               <button
                 onClick={() => {
                   onToggleExplainer();
                   setToolsOpen(false);
                 }}
-                className="w-full px-2.5 py-1.5 text-xs text-left font-medium rounded bg-[#F8FAFC] hover:bg-[#F1F5F9] border border-[#E2E8F0] text-[#0F172A] flex items-center justify-between transition-colors"
+                className="w-full px-2.5 py-1.5 text-xs text-left font-medium bg-[#EAE8E0] hover:bg-[#D0CEC4]/50 border border-[#D0CEC4] text-[#121417] flex items-center justify-between transition-colors"
               >
                 <span>Radar physics reference</span>
-                <span className="text-[10px] font-mono text-[#64748B]">Doc</span>
+                <span className="text-[10px] font-sans text-[#121417]/60">Document</span>
               </button>
 
               {/* NASA / ISRO Resources & STAC Search */}
@@ -249,10 +244,10 @@ export default function Header({
                   onToggleResources();
                   setToolsOpen(false);
                 }}
-                className="w-full px-2.5 py-1.5 text-xs text-left font-medium rounded bg-[#F8FAFC] hover:bg-[#F1F5F9] border border-[#E2E8F0] text-[#0F172A] flex items-center justify-between transition-colors"
+                className="w-full px-2.5 py-1.5 text-xs text-left font-medium bg-[#EAE8E0] hover:bg-[#D0CEC4]/50 border border-[#D0CEC4] text-[#121417] flex items-center justify-between transition-colors"
               >
-                <span>NASA CMR & ASF STAC query</span>
-                <span className="text-[10px] font-mono text-[#2563EB] font-semibold">STAC</span>
+                <span>NASA CMR and ASF STAC query</span>
+                <span className="text-[10px] font-sans text-[#0047AB] font-semibold">STAC</span>
               </button>
             </div>
           </div>

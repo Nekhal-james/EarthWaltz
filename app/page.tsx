@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useStudyAreas } from '@/hooks/useStudyAreas';
 import { useSonification } from '@/hooks/useSonification';
 import { useTimeSeries } from '@/hooks/useTimeSeries';
@@ -23,33 +23,60 @@ const MissionResourcesModal = dynamic(() => import('@/components/MissionResource
 export default function HomePage() {
   const { areas, activeArea, setActiveArea, loading } = useStudyAreas();
 
-  // Mode: 'story' (Editorial) is DEFAULT ON LOAD, 'instrument' is Advanced Workbench
+  // Mode: 'story' (Overview) is DEFAULT ON LOAD, 'instrument' is Workbench
   const [mode, setMode] = useState<AppMode>('story');
 
+  // Shared unified state between Overview ('story') and Workbench ('instrument')
   const [activeLayerKey, setActiveLayerKey] = useState<string>('hh');
+  const [selectedBand, setSelectedBand] = useState<string>('L-Band');
+  const [curtainPosition, setCurtainPosition] = useState<number>(38); // Default 38%
+  const [timelineStep, setTimelineStep] = useState<number>(0); // 0 to 11
+  const [isTimelinePlaying, setIsTimelinePlaying] = useState<boolean>(false);
+
+  // Map viewport states
   const [basemap, setBasemap] = useState<BasemapStyle>('esri-satellite');
   const [sarOpacity, setSarOpacity] = useState<number>(0.85);
   const [cursorCoords, setCursorCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [ancillaryVisible, setAncillaryVisible] = useState<string[]>([]);
 
-  // Story Mode Split Curtain Position (0 to 100%, default 35% so 65% showcases radar swath)
-  const [storyCurtainPos, setStoryCurtainPos] = useState<number>(35);
-
-  // Shared Timeline Play state across Story Mode & Instrument Mode
-  const [isTimelinePlaying, setIsTimelinePlaying] = useState<boolean>(false);
-
   // Audio Sonification for Story Mode & Workbench
   const { play: playAudio, stop: stopAudio, isPlaying: isSonifying } = useSonification();
   const { data: timeseriesData } = useTimeSeries(activeArea?.timeseries || null);
 
-  // Timeline state synced with BottomDock, StoryStatusStrip, and CursorHUD
-  const [timelineDate, setTimelineDate] = useState<string>('2025-01-15');
-  const [timelineDateIndex, setTimelineDateIndex] = useState<number>(0);
-  const [selectedBand, setSelectedBand] = useState<string>('L-Band');
+  // Dates for 12-step timeline
+  const dates = timeseriesData?.dates || [
+    '2025-01-15',
+    '2025-02-15',
+    '2025-03-15',
+    '2025-04-15',
+    '2025-05-15',
+    '2025-06-15',
+    '2025-07-15',
+    '2025-08-15',
+    '2025-09-15',
+    '2025-10-15',
+    '2025-11-15',
+    '2025-12-15',
+  ];
+  const timelineDate = dates[timelineStep] || dates[0];
 
-  const handleTimelineDateChange = useCallback((idx: number, d: string) => {
-    setTimelineDateIndex(idx);
-    setTimelineDate(d);
+  // Single centralized 1100ms interval timer for 12-step timeline playback
+  useEffect(() => {
+    if (!isTimelinePlaying) return;
+
+    const interval = setInterval(() => {
+      setTimelineStep((prev) => (prev + 1) % 12);
+    }, 1100);
+
+    return () => clearInterval(interval);
+  }, [isTimelinePlaying]);
+
+  const handleTimelineDateChange = useCallback((idx: number, _d?: string) => {
+    setTimelineStep(idx);
+  }, []);
+
+  const handleTimelineStepChange = useCallback((step: number) => {
+    setTimelineStep(step);
   }, []);
 
   // Snapshot & Modals
@@ -61,6 +88,11 @@ export default function HomePage() {
   const [isTourPlaying, setIsTourPlaying] = useState(false);
   const [tourIndex, setTourIndex] = useState(0);
 
+  // Trigger snapshot export in Globe via captureTrigger
+  const handleExportSnapshot = useCallback(() => {
+    setCaptureTrigger((prev) => prev + 1);
+  }, []);
+
   // 1-Click Study Area Switcher: Auto-selects signature phenomenon layer
   const handleAreaChange = useCallback(
     (area: StudyArea) => {
@@ -70,7 +102,7 @@ export default function HomePage() {
           ? area.default_layer
           : Object.keys(area.layers)[0] || 'hh';
       setActiveLayerKey(signatureLayer);
-      setTimelineDateIndex(0);
+      setTimelineStep(0);
     },
     [setActiveArea]
   );
@@ -112,11 +144,11 @@ export default function HomePage() {
     } else {
       const hhSeries = timeseriesData?.series?.hh_mean || [-12, -11, -9, -7, -6, -8, -10, -11, -12];
       const cohSeries = timeseriesData?.series?.coherence_mean || [0.7, 0.7, 0.65, 0.6, 0.55, 0.6, 0.68];
-      const dbVal = hhSeries[timelineDateIndex] ?? hhSeries[0];
-      const cohVal = cohSeries[timelineDateIndex] ?? cohSeries[0];
+      const dbVal = hhSeries[timelineStep] ?? hhSeries[0];
+      const cohVal = cohSeries[timelineStep] ?? cohSeries[0];
       playAudio(dbVal, cohVal);
     }
-  }, [isSonifying, stopAudio, playAudio, timeseriesData, timelineDateIndex]);
+  }, [isSonifying, stopAudio, playAudio, timeseriesData, timelineStep]);
 
   const activeLayer =
     activeArea.layers[activeLayerKey] ||
@@ -125,10 +157,10 @@ export default function HomePage() {
 
   return (
     <div
-      style={{ backgroundColor: '#FFFFFF', color: '#0F172A', minHeight: '100vh', width: '100vw' }}
-      className="h-screen w-screen flex flex-col bg-[#FFFFFF] text-[#0F172A] overflow-hidden select-none font-sans"
+      style={{ backgroundColor: '#F6F5F0', color: '#121417', minHeight: '100vh', width: '100vw' }}
+      className="h-screen w-screen flex flex-col bg-[#F6F5F0] text-[#121417] overflow-hidden select-none font-sans"
     >
-      {/* GLOBAL COMMAND BAR WITH MODE SWITCHER */}
+      {/* GLOBAL COMMAND BAR WITH MODE SWITCHER (48px / h-12) */}
       <Header
         mode={mode}
         onModeChange={setMode}
@@ -141,7 +173,7 @@ export default function HomePage() {
         showExplainer={showExplainer}
         onToggleResources={() => setShowResources((p) => !p)}
         showResources={showResources}
-        onExportSnapshot={() => setCaptureTrigger((prev) => prev + 1)}
+        onExportSnapshot={handleExportSnapshot}
         isTourPlaying={isTourPlaying}
         onToggleTour={handleToggleTour}
         tourIndex={tourIndex}
@@ -152,9 +184,9 @@ export default function HomePage() {
         onOpacityChange={setSarOpacity}
       />
 
-      {/* DUAL-MODE WORKSPACE (Shared persistent MapLibre Canvas) */}
-      <div className="relative flex-1 flex w-full h-[calc(100vh-3.5rem)] overflow-hidden">
-        {/* LEFT COLUMN: STORY JOURNAL vs INSTRUMENT SIDEBAR */}
+      {/* DUAL-MODE WORKSPACE (Height matches 48px header: h-[calc(100vh-3rem)]) */}
+      <div className="relative flex-1 flex w-full h-[calc(100vh-3rem)] overflow-hidden">
+        {/* LEFT COLUMN: STORY JOURNAL (Overview) vs INSPECTOR SIDEBAR (Workbench) */}
         {mode === 'story' ? (
           <StoryJournal
             areas={areas}
@@ -162,7 +194,7 @@ export default function HomePage() {
             onSelectArea={handleAreaChange}
             activeLayerKey={activeLayerKey}
             onSelectLayer={setActiveLayerKey}
-            onFocusCurtain={() => setStoryCurtainPos(35)}
+            onFocusCurtain={() => setCurtainPosition(38)}
             onSwitchToInstrument={() => setMode('instrument')}
             isPlayingSonification={isSonifying}
             onToggleSonification={handleToggleStorySonification}
@@ -207,10 +239,10 @@ export default function HomePage() {
             opacity={sarOpacity}
             captureTrigger={captureTrigger}
             onSnapshotExported={handleSnapshotSuccess}
-            timelineIndex={timelineDateIndex}
+            timelineIndex={timelineStep}
             selectedBand={selectedBand}
             isTimelinePlaying={isTimelinePlaying}
-            curtainPosition={storyCurtainPos}
+            curtainPosition={curtainPosition}
             mode={mode}
           />
 
@@ -218,8 +250,8 @@ export default function HomePage() {
           {mode === 'story' && (
             <>
               <StorySplitCurtain
-                position={storyCurtainPos}
-                onPositionChange={setStoryCurtainPos}
+                position={curtainPosition}
+                onPositionChange={setCurtainPosition}
               />
 
               <StoryStatusStrip
@@ -227,8 +259,10 @@ export default function HomePage() {
                 area={activeArea}
                 cursorCoords={cursorCoords}
                 timeseriesPath={activeArea.timeseries}
-                timelineIndex={timelineDateIndex}
+                timelineIndex={timelineStep}
+                timelineStep={timelineStep}
                 onTimelineChange={handleTimelineDateChange}
+                onTimelineStepChange={handleTimelineStepChange}
                 isPlaying={isTimelinePlaying}
                 onPlayingChange={setIsTimelinePlaying}
               />
@@ -243,7 +277,7 @@ export default function HomePage() {
                 area={activeArea}
                 cursorCoords={cursorCoords}
                 timelineDate={timelineDate}
-                timelineIndex={timelineDateIndex}
+                timelineIndex={timelineStep}
               />
 
               <BottomDock
@@ -258,8 +292,8 @@ export default function HomePage() {
 
           {/* SNAPSHOT TOAST NOTIFICATION */}
           {snapshotToast && (
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-[#141613] border border-[#10B981] rounded-md px-4 py-2 text-xs font-mono text-[#F4F3EF] shadow-2xl z-50 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-[#10B981]" />
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-[#121417] border border-[#0047AB] rounded px-4 py-2 text-xs font-sans tabular-nums text-[#F6F5F0] shadow-2xl z-50 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-[#0047AB]" />
               <span>Snapshot exported: {snapshotToast}</span>
             </div>
           )}
