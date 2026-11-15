@@ -327,7 +327,13 @@ def build_study_areas_json(out_dir: Path):
         },
     ]
 
-    obj = {"areas": areas}
+    obj = {
+        "metadata": {
+            "repository": "https://github.com/Nekhal-james/EarthWaltz",
+            "si_acknowledgment": "SI-assisted code and data pipeline calibration derived from AWS Terrarium 30m DEM, Esri World Imagery, and NASA ASF/CMR granules.",
+        },
+        "areas": areas,
+    }
     out_path = out_dir / "study-areas.json"
     with open(str(out_path), 'w') as f:
         json.dump(obj, f, indent=2)

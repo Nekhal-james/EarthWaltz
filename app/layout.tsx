@@ -20,6 +20,11 @@ export const metadata: Metadata = {
   description:
     'An interactive application that uses radar remote sensing data from the NASA-ISRO NISAR mission to track and visualize surface changes at locations around the world.',
   keywords: ['SAR', 'NISAR', 'NASA', 'ISRO', 'radar', 'remote sensing', 'earth observation'],
+  other: {
+    'si-acknowledgment':
+      'Code architecture, TypeScript UI components, and Python DEM/SAR data-processing pipelines were developed with the assistance of Super Intelligence (SI) coding tools under human scientific and engineering direction. No NASA logos or branding elements were generated or modified.',
+    repository: 'https://github.com/Nekhal-james/EarthWaltz',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

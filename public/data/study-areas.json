@@ -1,4 +1,8 @@
 {
+  "metadata": {
+    "repository": "https://github.com/Nekhal-james/EarthWaltz",
+    "si_acknowledgment": "SI-assisted code and data pipeline calibration derived from AWS Terrarium 30m DEM, Esri World Imagery, and NASA ASF/CMR granules."
+  },
   "areas": [
     {
       "id": "kerala",

@@ -2,6 +2,12 @@
   "name": "earthwaltz",
   "version": "0.1.0",
   "private": true,
+  "description": "An interactive application that uses radar remote sensing data from the NASA-ISRO Synthetic Aperture Radar (NISAR) mission to track and visualize one or more types of surface change at locations around the world.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Nekhal-james/EarthWaltz.git"
+  },
+  "si_acknowledgment": "Code architecture, TypeScript UI components, and Python DEM/SAR data-processing pipelines were developed with the assistance of Super Intelligence (SI) coding tools under human scientific and engineering direction. No NASA logos or branding elements were generated or modified.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

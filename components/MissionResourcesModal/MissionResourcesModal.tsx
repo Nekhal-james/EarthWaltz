@@ -340,7 +340,18 @@ export default function MissionResourcesModal({ activeArea, onClose }: MissionRe
 
         {/* Modal Footer */}
         <div className="px-5 py-3 border-t border-[#242522] bg-[#181916]/50 flex justify-between items-center text-xs">
-          <span className="text-[#9A9B94] text-[11px]">NASA Earth Science Data Systems (ESDIS)</span>
+          <div className="flex items-center gap-3">
+            <span className="text-[#9A9B94] text-[11px]">NASA Earth Science Data Systems (ESDIS)</span>
+            <span className="text-[#343530]">|</span>
+            <a
+              href="https://github.com/Nekhal-james/EarthWaltz"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#10B981] hover:underline text-[11px] font-mono flex items-center gap-1"
+            >
+              github.com/Nekhal-james/EarthWaltz ↗
+            </a>
+          </div>
           <button
             onClick={onClose}
             className="px-3 py-1 bg-[#242522] hover:bg-[#2c3345] text-[#F3F2EE] text-xs font-medium rounded-md transition-colors"

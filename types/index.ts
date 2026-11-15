@@ -51,6 +51,10 @@ export interface StudyArea {
 }
 
 export interface StudyAreasData {
+  metadata?: {
+    repository?: string;
+    si_acknowledgment?: string;
+  };
   areas: StudyArea[];
 }
 

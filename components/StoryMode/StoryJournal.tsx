@@ -276,6 +276,22 @@ export default function StoryJournal({
             {isPlayingSonification ? 'Stop radar rhythm' : 'Listen to radar rhythm'}
           </button>
         </div>
+
+        {/* Cartographic Colophon / SI & Data Attribution */}
+        <div className="border-t border-[#D0CEC4] pt-3 pb-1 text-[11px] text-[#5A6065] leading-relaxed select-text">
+          <span>Source code: </span>
+          <a
+            href="https://github.com/Nekhal-james/EarthWaltz"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline text-[#0047AB] hover:text-[#003882]"
+          >
+            github.com/Nekhal-james/EarthWaltz
+          </a>
+          <span>
+            {' '}· Built with SI-assisted code & data pipeline calibration using NASA ASF, GIBS, and 30m DEM datasets. Audio synthesized algorithmically via Web Audio API.
+          </span>
+        </div>
       </section>
     </aside>
   );
