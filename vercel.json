@@ -1,0 +1,30 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "services": {
+    "app": {
+      "root": ".",
+      "framework": "nextjs",
+      "bindings": [
+        {
+          "type": "service",
+          "service": "data-pipeline",
+          "format": "url",
+          "env": "DATA_PIPELINE_URL"
+        }
+      ]
+    },
+    "data-pipeline": {
+      "root": "data-pipeline",
+      "runtime": "python",
+      "entrypoint": "index.py"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": {
+        "service": "app"
+      }
+    }
+  ]
+}

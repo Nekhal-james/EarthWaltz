@@ -121,6 +121,31 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Check internal data-pipeline service via Vercel service binding if available
+    const pipelineBaseUrl = process.env.DATA_PIPELINE_URL;
+    if (pipelineBaseUrl) {
+      try {
+        const pipelineUrl = new URL('provenance', pipelineBaseUrl.endsWith('/') ? pipelineBaseUrl : `${pipelineBaseUrl}/`);
+        const pRes = await fetch(pipelineUrl, { headers: { Accept: 'application/json' } });
+        if (pRes.ok) {
+          const pData = await pRes.json();
+          if (pData?.provenance) {
+            const list = Object.values(pData.provenance);
+            return NextResponse.json(
+              {
+                results: list,
+                count: list.length,
+                source: 'internal_data_pipeline_service',
+              },
+              { headers: edgeHeaders }
+            );
+          }
+        }
+      } catch {
+        /* fallback to static cache */
+      }
+    }
+
     // Fallback to verified granules
     const fallbackList = Object.values(VERIFIED_ASF_GRANULES);
     return NextResponse.json(
