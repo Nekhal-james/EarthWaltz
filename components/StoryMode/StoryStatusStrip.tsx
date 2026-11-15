@@ -83,15 +83,21 @@ export default function StoryStatusStrip({
 
   // Load telemetry grid for coordinate value lookup
   useEffect(() => {
-    if (!activeLayer) return;
+    if (!activeLayer?.telemetry) return;
     let cancelled = false;
 
-    fetch(`/data/${activeLayer.telemetry}`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data: TelemetryData | null) => {
+    const loadTelemetry = async () => {
+      try {
+        const res = await fetch(`/data/${activeLayer.telemetry}`);
+        if (!res.ok) return;
+        const data = (await res.json()) as TelemetryData;
         if (!cancelled && data) setTelemetry(data);
-      })
-      .catch(() => {});
+      } catch {
+        /* silent fallback, never console.error */
+      }
+    };
+
+    loadTelemetry();
 
     return () => {
       cancelled = true;

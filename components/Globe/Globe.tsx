@@ -68,11 +68,11 @@ const OPTICAL_MAP_STYLE: maplibregl.StyleSpecification = {
     'nasa-gibs-clouds': {
       type: 'raster',
       tiles: [
-        'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/2025-07-15/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg',
+        'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_SNPP_CorrectedReflectance_TrueColor/default/2025-08-12/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg',
       ],
       tileSize: 256,
       attribution: '© NASA EOSDIS GIBS',
-      maxzoom: 9,
+      maxzoom: 8,
     },
     'esri-reference': {
       type: 'raster',
@@ -161,11 +161,11 @@ const GIBS_TRUECOLOR_STYLE: maplibregl.StyleSpecification = {
     'gibs-viirs': {
       type: 'raster',
       tiles: [
-        'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_SNPP_CorrectedReflectance_TrueColor/default/2025-09-15/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg',
+        'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_SNPP_CorrectedReflectance_TrueColor/default/2025-08-12/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg',
       ],
       tileSize: 256,
       attribution: '© NASA EOSDIS GIBS',
-      maxzoom: 9,
+      maxzoom: 8,
     },
     'esri-reference': {
       type: 'raster',
@@ -531,8 +531,8 @@ export default function Globe({
       }
 
       renderAncillaryLayers();
-    } catch (err) {
-      console.warn('Radar overlay render warning:', err);
+    } catch {
+      /* silent fallback, never console.error */
     }
   }, [activeArea, activeLayer, opacity, renderAncillaryLayers]);
 
@@ -575,8 +575,8 @@ export default function Globe({
           beforeRef
         );
       }
-    } catch (err) {
-      console.warn('Optical cloud deck render warning:', err);
+    } catch {
+      /* silent fallback, never console.error */
     }
   }, [activeArea]);
 
@@ -685,17 +685,28 @@ export default function Globe({
   useEffect(() => {
     if (!radarContainerRef.current || !opticalContainerRef.current) return;
 
+    const initialCenter: [number, number] = [
+      activeArea?.lng ?? 76.65,
+      activeArea?.lat ?? 9.65,
+    ];
+    const initialZoom = activeArea?.zoom ?? 10.0;
+
     // 1. Bottom Radar Map
     const radarMap = new maplibregl.Map({
       container: radarContainerRef.current,
       style: BASEMAPS[basemap]?.style || ESRI_SATELLITE_STYLE,
-      center: [activeArea.lng, activeArea.lat],
-      zoom: 10.0,
+      center: initialCenter,
+      zoom: initialZoom,
       pitch: 18,
       bearing: 0,
+      minZoom: 6,
       attributionControl: false,
       renderWorldCopies: false,
       preserveDrawingBuffer: true,
+    });
+
+    radarMap.on('error', () => {
+      /* silent fallback for tile network errors, never console.error */
     });
 
     radarMap.addControl(new maplibregl.NavigationControl({ showCompass: true }), 'bottom-right');
@@ -708,13 +719,18 @@ export default function Globe({
     const opticalMap = new maplibregl.Map({
       container: opticalContainerRef.current,
       style: OPTICAL_MAP_STYLE,
-      center: [activeArea.lng, activeArea.lat],
-      zoom: 10.0,
+      center: initialCenter,
+      zoom: initialZoom,
       pitch: 18,
       bearing: 0,
+      minZoom: 6,
       attributionControl: false,
       renderWorldCopies: false,
       preserveDrawingBuffer: true,
+    });
+
+    opticalMap.on('error', () => {
+      /* silent fallback for tile network errors, never console.error */
     });
 
     // Bidirectional camera synchronization

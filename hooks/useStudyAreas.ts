@@ -199,24 +199,26 @@ export function useStudyAreas() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch('/data/study-areas.json')
-      .then((res) => {
-        if (!res.ok) throw new Error('No data');
-        return res.json() as Promise<StudyAreasData>;
-      })
-      .then((data) => {
+    const loadStudyAreas = async () => {
+      try {
+        const res = await fetch('/data/study-areas.json');
+        if (!res.ok) return;
+        const data = (await res.json()) as StudyAreasData;
         if (!cancelled && data.areas?.length) {
           setAreas(data.areas);
           setActiveArea(data.areas[0]);
         }
-      })
-      .catch(() => {
-        // Graceful fallback: use hardcoded areas
-      })
-      .finally(() => {
+      } catch {
+        /* silent fallback, never console.error */
+      } finally {
         if (!cancelled) setLoading(false);
-      });
-    return () => { cancelled = true; };
+      }
+    };
+
+    loadStudyAreas();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return { areas, activeArea, setActiveArea, loading };

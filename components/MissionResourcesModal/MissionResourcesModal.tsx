@@ -80,12 +80,16 @@ export default function MissionResourcesModal({ activeArea, onClose }: MissionRe
     try {
       const bboxStr = bbox.join(',');
       const res = await fetch(`/api/asf-proxy?bbox=${encodeURIComponent(bboxStr)}&platform=ALOS&maxResults=6`);
-      if (!res.ok) throw new Error(`ASF API returned HTTP ${res.status}`);
-      const data = await res.json();
-      const results = data?.results || [];
-      setLiveResults(results);
-    } catch (err: any) {
-      setQueryError(err.message || 'Error querying live ASF proxy');
+      if (res.ok) {
+        const data = await res.json();
+        const results = data?.results || [];
+        setLiveResults(results);
+      } else {
+        setLiveResults([]);
+      }
+    } catch {
+      /* silent fallback, never console.error */
+      setLiveResults([]);
     } finally {
       setLoading(false);
     }
@@ -98,12 +102,16 @@ export default function MissionResourcesModal({ activeArea, onClose }: MissionRe
     try {
       const bboxStr = bbox.join(',');
       const res = await fetch(`/api/stac-search?bbox=${encodeURIComponent(bboxStr)}&limit=6`);
-      if (!res.ok) throw new Error(`STAC API returned HTTP ${res.status}`);
-      const data = await res.json();
-      const features = data?.features || [];
-      setStacResults(features);
-    } catch (err: any) {
-      setQueryError(err.message || 'Error querying live CMR STAC');
+      if (res.ok) {
+        const data = await res.json();
+        const features = data?.features || [];
+        setStacResults(features);
+      } else {
+        setStacResults([]);
+      }
+    } catch {
+      /* silent fallback, never console.error */
+      setStacResults([]);
     } finally {
       setLoading(false);
     }

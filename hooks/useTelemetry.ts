@@ -14,21 +14,28 @@ export function useTelemetry(telemetryPath: string | null) {
     }
     let cancelled = false;
     setLoading(true);
-    fetch(`/data/${telemetryPath}`)
-      .then((res) => {
-        if (!res.ok) throw new Error('Not found');
-        return res.json() as Promise<TelemetryData>;
-      })
-      .then((d) => {
+
+    const loadTelemetry = async () => {
+      try {
+        const res = await fetch(`/data/${telemetryPath}`);
+        if (!res.ok) {
+          if (!cancelled) setData(null);
+          return;
+        }
+        const d = (await res.json()) as TelemetryData;
         if (!cancelled) setData(d);
-      })
-      .catch(() => {
+      } catch {
+        /* silent fallback, never console.error */
         if (!cancelled) setData(null);
-      })
-      .finally(() => {
+      } finally {
         if (!cancelled) setLoading(false);
-      });
-    return () => { cancelled = true; };
+      }
+    };
+
+    loadTelemetry();
+    return () => {
+      cancelled = true;
+    };
   }, [telemetryPath]);
 
   const lookup = useCallback(

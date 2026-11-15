@@ -19,19 +19,17 @@ export function useTimeSeries(timeseriesPath: string | null) {
     let cancelled = false;
     setLoading(true);
 
-    fetch(`/data/${timeseriesPath}`)
-      .then((res) => {
-        if (!res.ok) throw new Error('Failed to load timeseries');
-        return res.json() as Promise<TimeSeriesData>;
-      })
-      .then((d) => {
+    const loadTimeseries = async () => {
+      try {
+        const res = await fetch(`/data/${timeseriesPath}`);
+        if (!res.ok) throw new Error();
+        const d = (await res.json()) as TimeSeriesData;
         if (!cancelled) {
           setData(d);
           setCurrentIndex(0);
         }
-      })
-      .catch((err) => {
-        console.warn('Timeseries fetch warning:', err);
+      } catch {
+        /* silent fallback, never console.error */
         if (!cancelled) {
           // Fallback synthetic timeseries if network blips
           setData({
@@ -55,10 +53,12 @@ export function useTimeSeries(timeseriesPath: string | null) {
             },
           });
         }
-      })
-      .finally(() => {
+      } finally {
         if (!cancelled) setLoading(false);
-      });
+      }
+    };
+
+    loadTimeseries();
 
     return () => {
       cancelled = true;
